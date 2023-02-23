@@ -44,9 +44,16 @@ const require$$1__namespace = /*#__PURE__*/_interopNamespaceDefault(require$$1$2
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function getAugmentedNamespace(n) {
+  if (n.__esModule) return n;
   var f = n.default;
 	if (typeof f == "function") {
-		var a = function () {
+		var a = function a () {
+			if (this instanceof a) {
+				var args = [null];
+				args.push.apply(args, arguments);
+				var Ctor = Function.bind.apply(f, args);
+				return new Ctor();
+			}
 			return f.apply(this, arguments);
 		};
 		a.prototype = f.prototype;
@@ -886,11 +893,19 @@ function checkBypass(reqUrl) {
 }
 proxy.checkBypass = checkBypass;
 
-var tunnel$1 = {exports: {}};
+var tunnelExports = {};
+var tunnel$1 = {
+  get exports(){ return tunnelExports; },
+  set exports(v){ tunnelExports = v; },
+};
 
 var tunnel = {};
 
-var events$2 = {exports: {}};
+var eventsExports = {};
+var events$2 = {
+  get exports(){ return eventsExports; },
+  set exports(v){ eventsExports = v; },
+};
 
 var R = typeof Reflect === 'object' ? Reflect : null;
 var ReflectApply = R && typeof R.apply === 'function'
@@ -925,7 +940,7 @@ function EventEmitter() {
   EventEmitter.init.call(this);
 }
 events$2.exports = EventEmitter;
-events$2.exports.once = once;
+eventsExports.once = once;
 
 // Backwards-compat with node 0.10.x
 EventEmitter.EventEmitter = EventEmitter;
@@ -1369,7 +1384,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
 var tls = require$$1$3;
 var http$1 = http$2;
 var https$1 = https$2;
-var events$1 = events$2.exports;
+var events$1 = eventsExports;
 var util$5 = require$$1$2;
 
 
@@ -1666,7 +1681,7 @@ tunnel.debug = debug; // for test
 	const http = __importStar(http$2);
 	const https = __importStar(https$2);
 	const pm = __importStar(proxy);
-	const tunnel = __importStar(tunnel$1.exports);
+	const tunnel = __importStar(tunnelExports);
 	var HttpCodes;
 	(function (HttpCodes) {
 	  HttpCodes[HttpCodes["OK"] = 200] = "OK";
@@ -3670,7 +3685,7 @@ var __awaiter$9 = (commonjsGlobal && commonjsGlobal.__awaiter) || function (this
 Object.defineProperty(toolrunner, "__esModule", { value: true });
 toolrunner.argStringToArray = toolrunner.ToolRunner = void 0;
 const os$1 = __importStar$e(os$4);
-const events = __importStar$e(events$2.exports);
+const events = __importStar$e(eventsExports);
 const child = __importStar$e(require$$1$5);
 const path$9 = __importStar$e(require$$1$4);
 const io$2 = __importStar$e(io$3);
@@ -6585,7 +6600,11 @@ function create(patterns, options) {
 }
 glob$1.create = create;
 
-var semver$1 = {exports: {}};
+var semverExports = {};
+var semver$1 = {
+  get exports(){ return semverExports; },
+  set exports(v){ semverExports = v; },
+};
 
 (function (module, exports) {
 	exports = module.exports = SemVer;
@@ -8184,7 +8203,7 @@ var semver$1 = {exports: {}};
 	  '.' + (match[3] || '0') +
 	  '.' + (match[4] || '0'), options)
 	}
-} (semver$1, semver$1.exports));
+} (semver$1, semverExports));
 
 // Unique ID creation requires a high quality random # generator.  In node.js
 // this is pretty straight-forward - we use the crypto API.
@@ -8387,6 +8406,10 @@ var constants = {};
 	  CompressionMethod["ZstdWithoutLong"] = "zstd-without-long";
 	  CompressionMethod["Zstd"] = "zstd";
 	})(exports.CompressionMethod || (exports.CompressionMethod = {}));
+	(function (ArchiveToolType) {
+	  ArchiveToolType["GNU"] = "gnu";
+	  ArchiveToolType["BSD"] = "bsd";
+	})(exports.ArchiveToolType || (exports.ArchiveToolType = {}));
 	// The default number of retry attempts.
 	exports.DefaultRetryAttempts = 2;
 	// The default delay in milliseconds between retry attempts.
@@ -8395,6 +8418,12 @@ var constants = {};
 	// over the socket during this period, the socket is destroyed and the download
 	// is aborted.
 	exports.SocketTimeout = 5000;
+	// The default path of GNUtar on hosted Windows runners
+	exports.GnuTarPathOnWindows = `${process.env['PROGRAMFILES']}\\Git\\usr\\bin\\tar.exe`;
+	// The default path of BSDtar on hosted Windows runners
+	exports.SystemTarPathOnWindows = `${process.env['SYSTEMDRIVE']}\\Windows\\System32\\tar.exe`;
+	exports.TarFilename = 'cache.tar';
+	exports.ManifestFilename = 'manifest.txt';
 	
 } (constants));
 
@@ -8428,10 +8457,10 @@ const glob = __importStar$6(glob$1);
 const io$1 = __importStar$6(io$3);
 const fs$3 = __importStar$6(fs$6);
 const path$3 = __importStar$6(require$$1$4);
-const semver = __importStar$6(semver$1.exports);
+const semver = __importStar$6(semverExports);
 const util$4 = __importStar$6(require$$1$2);
 const uuid_1 = uuid_1$1;
-const constants_1$4 = constants;
+const constants_1$3 = constants;
 // From https://github.com/actions/toolkit/blob/main/packages/tool-cache/src/tool-cache.ts#L23
 function createTempDirectory() {
   return __awaiter$5(this, void 0, void 0, function* () {
@@ -8506,12 +8535,13 @@ function unlinkFile(filePath) {
   });
 }
 cacheUtils.unlinkFile = unlinkFile;
-function getVersion(app) {
+function getVersion(app, additionalArgs = []) {
   return __awaiter$5(this, void 0, void 0, function* () {
-    core$5.debug(`Checking ${app} --version`);
     let versionOutput = '';
+    additionalArgs.push('--version');
+    core$5.debug(`Checking ${app} ${additionalArgs.join(' ')}`);
     try {
-      yield exec.exec(`${app} --version`, [], {
+      yield exec.exec(`${app}`, additionalArgs, {
         ignoreReturnCode: true,
         silent: true,
         listeners: {
@@ -8531,40 +8561,34 @@ function getVersion(app) {
 // Use zstandard if possible to maximize cache performance
 function getCompressionMethod() {
   return __awaiter$5(this, void 0, void 0, function* () {
-    if (process.platform === 'win32' && !(yield isGnuTarInstalled())) {
-      // Disable zstd due to bug https://github.com/actions/cache/issues/301
-      return constants_1$4.CompressionMethod.Gzip;
-    }
-    const versionOutput = yield getVersion('zstd');
+    const versionOutput = yield getVersion('zstd', ['--quiet']);
     const version = semver.clean(versionOutput);
-    if (!versionOutput.toLowerCase().includes('zstd command line interface')) {
-      // zstd is not installed
-      return constants_1$4.CompressionMethod.Gzip;
-    }
-    else if (!version || semver.lt(version, 'v1.3.2')) {
-      // zstd is installed but using a version earlier than v1.3.2
-      // v1.3.2 is required to use the `--long` options in zstd
-      return constants_1$4.CompressionMethod.ZstdWithoutLong;
+    core$5.debug(`zstd version: ${version}`);
+    if (versionOutput === '') {
+      return constants_1$3.CompressionMethod.Gzip;
     }
     else {
-      return constants_1$4.CompressionMethod.Zstd;
+      return constants_1$3.CompressionMethod.ZstdWithoutLong;
     }
   });
 }
 cacheUtils.getCompressionMethod = getCompressionMethod;
 function getCacheFileName(compressionMethod) {
-  return compressionMethod === constants_1$4.CompressionMethod.Gzip
-    ? constants_1$4.CacheFilename.Gzip
-    : constants_1$4.CacheFilename.Zstd;
+  return compressionMethod === constants_1$3.CompressionMethod.Gzip
+    ? constants_1$3.CacheFilename.Gzip
+    : constants_1$3.CacheFilename.Zstd;
 }
 cacheUtils.getCacheFileName = getCacheFileName;
-function isGnuTarInstalled() {
+function getGnuTarPathOnWindows() {
   return __awaiter$5(this, void 0, void 0, function* () {
+    if (fs$3.existsSync(constants_1$3.GnuTarPathOnWindows)) {
+      return constants_1$3.GnuTarPathOnWindows;
+    }
     const versionOutput = yield getVersion('tar');
-    return versionOutput.toLowerCase().includes('gnu tar');
+    return versionOutput.toLowerCase().includes('gnu tar') ? io$1.which('tar') : '';
   });
 }
-cacheUtils.isGnuTarInstalled = isGnuTarInstalled;
+cacheUtils.getGnuTarPathOnWindows = getGnuTarPathOnWindows;
 function assertDefined(name, value) {
   if (value === undefined) {
     throw Error(`Expected ${name} but value was undefiend`);
@@ -8761,7 +8785,7 @@ const Constants$1 = {
   /**
    * The core-http version
    */
-  coreHttpVersion: "2.2.7",
+  coreHttpVersion: "2.3.1",
   /**
    * Specifies HTTP.
    */
@@ -10123,7 +10147,8 @@ function isSpecialXmlProperty(propertyName, options) {
   return [XML_ATTRKEY, options.xmlCharKey].includes(propertyName);
 }
 function deserializeCompositeType(serializer, mapper, responseBody, objectName, options) {
-  var _a;
+  var _a, _b;
+  const xmlCharKey = (_a = options.xmlCharKey) !== null && _a !== void 0 ? _a : XML_CHARKEY;
   if (getPolymorphicDiscriminatorRecursively(serializer, mapper)) {
     mapper = getPolymorphicMapper(serializer, mapper, responseBody, "serializedName");
   }
@@ -10154,6 +10179,16 @@ function deserializeCompositeType(serializer, mapper, responseBody, objectName, 
       if (propertyMapper.xmlIsAttribute && responseBody[XML_ATTRKEY]) {
         instance[key] = serializer.deserialize(propertyMapper, responseBody[XML_ATTRKEY][xmlName], propertyObjectName, options);
       }
+      else if (propertyMapper.xmlIsMsText) {
+        if (responseBody[xmlCharKey] !== undefined) {
+          instance[key] = responseBody[xmlCharKey];
+        }
+        else if (typeof responseBody === "string") {
+          // The special case where xml parser parses "<Name>content</Name>" into JSON of
+          //   `{ name: "content"}` instead of `{ name: { "_": "content" }}`
+          instance[key] = responseBody;
+        }
+      }
       else {
         const propertyName = xmlElementName || xmlName || serializedName;
         if (propertyMapper.xmlIsWrapped) {
@@ -10172,7 +10207,7 @@ function deserializeCompositeType(serializer, mapper, responseBody, objectName, 
             xmlName is "Cors" and xmlElementName is"CorsRule".
           */
           const wrapped = responseBody[xmlName];
-          const elementList = (_a = wrapped === null || wrapped === void 0 ? void 0 : wrapped[xmlElementName]) !== null && _a !== void 0 ? _a : [];
+          const elementList = (_b = wrapped === null || wrapped === void 0 ? void 0 : wrapped[xmlElementName]) !== null && _b !== void 0 ? _b : [];
           instance[key] = serializer.deserialize(propertyMapper, elementList, propertyObjectName, options);
         }
         else {
@@ -10627,7 +10662,7 @@ const delimiter$1 = '-'; // '\x2D'
 
 /** Regular expressions */
 const regexPunycode = /^xn--/;
-const regexNonASCII = /[^\0-\x7E]/; // non-ASCII chars
+const regexNonASCII = /[^\0-\x7F]/; // Note: U+007F DEL is excluded too.
 const regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
 
 /** Error messages */
@@ -10662,11 +10697,11 @@ function error(type) {
  * item.
  * @returns {Array} A new array of values returned by the callback function.
  */
-function map(array, fn) {
+function map(array, callback) {
 	const result = [];
 	let length = array.length;
 	while (length--) {
-		result[length] = fn(array[length]);
+		result[length] = callback(array[length]);
 	}
 	return result;
 }
@@ -10678,22 +10713,22 @@ function map(array, fn) {
  * @param {String} domain The domain name or email address.
  * @param {Function} callback The function that gets called for every
  * character.
- * @returns {Array} A new string of characters returned by the callback
+ * @returns {String} A new string of characters returned by the callback
  * function.
  */
-function mapDomain(string, fn) {
-	const parts = string.split('@');
+function mapDomain(domain, callback) {
+	const parts = domain.split('@');
 	let result = '';
 	if (parts.length > 1) {
 		// In email addresses, only the domain name should be punycoded. Leave
 		// the local part (i.e. everything up to `@`) intact.
 		result = parts[0] + '@';
-		string = parts[1];
+		domain = parts[1];
 	}
 	// Avoid `split(regex)` for IE8 compatibility. See #17.
-	string = string.replace(regexSeparators, '\x2E');
-	const labels = string.split('.');
-	const encoded = map(labels, fn).join('.');
+	domain = domain.replace(regexSeparators, '\x2E');
+	const labels = domain.split('.');
+	const encoded = map(labels, callback).join('.');
 	return result + encoded;
 }
 
@@ -10742,7 +10777,7 @@ function ucs2decode(string) {
  * @param {Array} codePoints The array of numeric code points.
  * @returns {String} The new Unicode string (UCS-2).
  */
-const ucs2encode = array => String.fromCodePoint(...array);
+const ucs2encode = codePoints => String.fromCodePoint(...codePoints);
 
 /**
  * Converts a basic code point into a digit/integer.
@@ -10754,13 +10789,13 @@ const ucs2encode = array => String.fromCodePoint(...array);
  * the code point does not represent a value.
  */
 const basicToDigit = function(codePoint) {
-	if (codePoint - 0x30 < 0x0A) {
-		return codePoint - 0x16;
+	if (codePoint >= 0x30 && codePoint < 0x3A) {
+		return 26 + (codePoint - 0x30);
 	}
-	if (codePoint - 0x41 < 0x1A) {
+	if (codePoint >= 0x41 && codePoint < 0x5B) {
 		return codePoint - 0x41;
 	}
-	if (codePoint - 0x61 < 0x1A) {
+	if (codePoint >= 0x61 && codePoint < 0x7B) {
 		return codePoint - 0x61;
 	}
 	return base;
@@ -10840,7 +10875,7 @@ const decode$1 = function(input) {
 		// which gets added to `i`. The overflow checking is easier
 		// if we increase `i` as we go, then subtract off its starting
 		// value at the end to obtain `delta`.
-		let oldi = i;
+		const oldi = i;
 		for (let w = 1, k = base; /* no condition */; k += base) {
 
 			if (index >= inputLength) {
@@ -10849,7 +10884,10 @@ const decode$1 = function(input) {
 
 			const digit = basicToDigit(input.charCodeAt(index++));
 
-			if (digit >= base || digit > floor((maxInt - i) / w)) {
+			if (digit >= base) {
+				error('invalid-input');
+			}
+			if (digit > floor((maxInt - i) / w)) {
 				error('overflow');
 			}
 
@@ -10903,7 +10941,7 @@ const encode$1 = function(input) {
 	input = ucs2decode(input);
 
 	// Cache the length.
-	let inputLength = input.length;
+	const inputLength = input.length;
 
 	// Initialize the state.
 	let n = initialN;
@@ -10917,7 +10955,7 @@ const encode$1 = function(input) {
 		}
 	}
 
-	let basicLength = output.length;
+	const basicLength = output.length;
 	let handledCPCount = basicLength;
 
 	// `handledCPCount` is the number of code points that have been handled;
@@ -10954,7 +10992,7 @@ const encode$1 = function(input) {
 			if (currentValue < n && ++delta > maxInt) {
 				error('overflow');
 			}
-			if (currentValue == n) {
+			if (currentValue === n) {
 				// Represent delta as a generalized variable-length integer.
 				let q = delta;
 				for (let k = base; /* no condition */; k += base) {
@@ -10971,7 +11009,7 @@ const encode$1 = function(input) {
 				}
 
 				output.push(stringFromCharCode(digitToBasic(q, 0)));
-				bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+				bias = adapt(delta, handledCPCountPlusOne, handledCPCount === basicLength);
 				delta = 0;
 				++handledCPCount;
 			}
@@ -24735,16 +24773,16 @@ function isUrlHttps(url) {
 }
 function createTunnel(isRequestHttps, isProxyHttps, tunnelOptions) {
   if (isRequestHttps && isProxyHttps) {
-    return tunnel$1.exports.httpsOverHttps(tunnelOptions);
+    return tunnelExports.httpsOverHttps(tunnelOptions);
   }
   else if (isRequestHttps && !isProxyHttps) {
-    return tunnel$1.exports.httpsOverHttp(tunnelOptions);
+    return tunnelExports.httpsOverHttp(tunnelOptions);
   }
   else if (!isRequestHttps && isProxyHttps) {
-    return tunnel$1.exports.httpOverHttps(tunnelOptions);
+    return tunnelExports.httpOverHttps(tunnelOptions);
   }
   else {
-    return tunnel$1.exports.httpOverHttp(tunnelOptions);
+    return tunnelExports.httpOverHttp(tunnelOptions);
   }
 }
 function isValidPort(port) {
@@ -25072,7 +25110,11 @@ CombinedStream$1.prototype._emitError = function(err) {
 
 var mimeTypes = {};
 
-var mimeDb = {exports: {}};
+var mimeDbExports = {};
+var mimeDb = {
+  get exports(){ return mimeDbExports; },
+  set exports(v){ mimeDbExports = v; },
+};
 
 const require$$0 = {
 	"application/1d-interleaved-parityfec": {
@@ -35806,7 +35848,7 @@ const require$$0 = {
 	 * @private
 	 */
 
-	var db = mimeDb.exports;
+	var db = mimeDbExports;
 	var extname = require$$1$4.extname;
 
 	/**
@@ -36262,7 +36304,11 @@ function parallel(list, iterator, callback)
   return terminator$1.bind(state, callback);
 }
 
-var serialOrdered$2 = {exports: {}};
+var serialOrderedExports = {};
+var serialOrdered$2 = {
+  get exports(){ return serialOrderedExports; },
+  set exports(v){ serialOrderedExports = v; },
+};
 
 var iterate  = iterate_1
   , initState  = state_1
@@ -36272,8 +36318,8 @@ var iterate  = iterate_1
 // Public API
 serialOrdered$2.exports = serialOrdered$1;
 // sorting helpers
-serialOrdered$2.exports.ascending  = ascending;
-serialOrdered$2.exports.descending = descending;
+serialOrderedExports.ascending  = ascending;
+serialOrderedExports.descending = descending;
 
 /**
  * Runs iterator over provided sorted array elements in series
@@ -36340,7 +36386,7 @@ function descending(a, b)
   return -1 * ascending(a, b);
 }
 
-var serialOrdered = serialOrdered$2.exports;
+var serialOrdered = serialOrderedExports;
 
 // Public API
 var serial_1 = serial;
@@ -36362,7 +36408,7 @@ var asynckit$1 =
 {
   parallel    : parallel_1,
   serial    : serial_1,
-  serialOrdered : serialOrdered$2.exports
+  serialOrdered : serialOrderedExports
 };
 
 // populates missing values
@@ -37241,7 +37287,11 @@ const logger$1 = createClientLogger("core-http");
 
 var publicApi = {};
 
-var URL$2 = {exports: {}};
+var URLExports = {};
+var URL$2 = {
+  get exports(){ return URLExports; },
+  set exports(v){ URLExports = v; },
+};
 
 var conversions = {};
 var lib$1 = conversions;
@@ -37431,7 +37481,11 @@ conversions["RegExp"] = function (V, opts) {
   return V;
 };
 
-var utils$4 = {exports: {}};
+var utilsExports = {};
+var utils$4 = {
+  get exports(){ return utilsExports; },
+  set exports(v){ utilsExports = v; },
+};
 
 (function (module) {
 
@@ -37456,7 +37510,11 @@ var utils$4 = {exports: {}};
 
 var URLImpl = {};
 
-var urlStateMachine = {exports: {}};
+var urlStateMachineExports = {};
+var urlStateMachine = {
+  get exports(){ return urlStateMachineExports; },
+  set exports(v){ urlStateMachineExports = v; },
+};
 
 var tr46 = {};
 
@@ -116601,7 +116659,7 @@ tr46.PROCESSING_OPTIONS = PROCESSING_OPTIONS;
 	};
 } (urlStateMachine));
 
-const usm = urlStateMachine.exports;
+const usm = urlStateMachineExports;
 
 URLImpl.implementation = class URLImpl {
   constructor(constructorArgs) {
@@ -116804,7 +116862,7 @@ URLImpl.implementation = class URLImpl {
 (function (module) {
 
 	const conversions = lib$1;
-	const utils = utils$4.exports;
+	const utils = utilsExports;
 	const Impl = URLImpl;
 
 	const impl = utils.implSymbol;
@@ -116998,15 +117056,15 @@ URLImpl.implementation = class URLImpl {
 	};
 } (URL$2));
 
-publicApi.URL = URL$2.exports.interface;
-publicApi.serializeURL = urlStateMachine.exports.serializeURL;
-publicApi.serializeURLOrigin = urlStateMachine.exports.serializeURLOrigin;
-publicApi.basicURLParse = urlStateMachine.exports.basicURLParse;
-publicApi.setTheUsername = urlStateMachine.exports.setTheUsername;
-publicApi.setThePassword = urlStateMachine.exports.setThePassword;
-publicApi.serializeHost = urlStateMachine.exports.serializeHost;
-publicApi.serializeInteger = urlStateMachine.exports.serializeInteger;
-publicApi.parseURL = urlStateMachine.exports.parseURL;
+publicApi.URL = URLExports.interface;
+publicApi.serializeURL = urlStateMachineExports.serializeURL;
+publicApi.serializeURLOrigin = urlStateMachineExports.serializeURLOrigin;
+publicApi.basicURLParse = urlStateMachineExports.basicURLParse;
+publicApi.setTheUsername = urlStateMachineExports.setTheUsername;
+publicApi.setThePassword = urlStateMachineExports.setThePassword;
+publicApi.serializeHost = urlStateMachineExports.serializeHost;
+publicApi.serializeInteger = urlStateMachineExports.serializeInteger;
+publicApi.parseURL = urlStateMachineExports.parseURL;
 
 // Based on https://github.com/tmpvar/jsdom/blob/aa85b2abf07766ff7bf5c1f6daafb3726f2f2db5/lib/jsdom/living/blob.js
 
@@ -117038,7 +117096,7 @@ let Blob$2 = class Blob {
 					buffer = Buffer.from(element.buffer, element.byteOffset, element.byteLength);
 				} else if (element instanceof ArrayBuffer) {
 					buffer = Buffer.from(element);
-				} else if (element instanceof Blob$2) {
+				} else if (element instanceof Blob) {
 					buffer = element[BUFFER];
 				} else {
 					buffer = Buffer.from(typeof element === 'string' ? element : String(element));
@@ -117103,7 +117161,7 @@ let Blob$2 = class Blob {
 
 		const buffer = this[BUFFER];
 		const slicedBuffer = buffer.slice(relativeStart, relativeStart + span);
-		const blob = new Blob$2([], { type: arguments[2] });
+		const blob = new Blob([], { type: arguments[2] });
 		blob[BUFFER] = slicedBuffer;
 		return blob;
 	}
@@ -118415,6 +118473,20 @@ const isDomainOrSubdomain = function isDomainOrSubdomain(destination, original) 
 };
 
 /**
+ * isSameProtocol reports whether the two provided URLs use the same protocol.
+ *
+ * Both domains must already be in canonical form.
+ * @param {string|URL} original
+ * @param {string|URL} destination
+ */
+const isSameProtocol = function isSameProtocol(destination, original) {
+	const orig = new URL$1$1(original).protocol;
+	const dest = new URL$1$1(destination).protocol;
+
+	return orig === dest;
+};
+
+/**
  * Fetch function
  *
  * @param   Mixed  url   Absolute url or Request instance
@@ -118445,7 +118517,7 @@ function fetch(url, opts) {
 			let error = new AbortError('The user aborted a request.');
 			reject(error);
 			if (request.body && request.body instanceof Stream$3.Readable) {
-				request.body.destroy(error);
+				destroyStream(request.body, error);
 			}
 			if (!response || !response.body) return;
 			response.body.emit('error', error);
@@ -118486,8 +118558,42 @@ function fetch(url, opts) {
 
 		req.on('error', function (err) {
 			reject(new FetchError(`request to ${request.url} failed, reason: ${err.message}`, 'system', err));
+
+			if (response && response.body) {
+				destroyStream(response.body, err);
+			}
+
 			finalize();
 		});
+
+		fixResponseChunkedTransferBadEnding(req, function (err) {
+			if (signal && signal.aborted) {
+				return;
+			}
+
+			if (response && response.body) {
+				destroyStream(response.body, err);
+			}
+		});
+
+		/* c8 ignore next 18 */
+		if (parseInt(process.version.substring(1)) < 14) {
+			// Before Node.js 14, pipeline() does not fully support async iterators and does not always
+			// properly handle when the socket close/end events are out of order.
+			req.on('socket', function (s) {
+				s.addListener('close', function (hadError) {
+					// if a data listener is still present we didn't end cleanly
+					const hasDataListener = s.listenerCount('data') > 0;
+
+					// if end happened before close but the socket didn't emit an error, do it now
+					if (response && hasDataListener && !hadError && !(signal && signal.aborted)) {
+						const err = new Error('Premature close');
+						err.code = 'ERR_STREAM_PREMATURE_CLOSE';
+						response.body.emit('error', err);
+					}
+				});
+			});
+		}
 
 		req.on('response', function (res) {
 			clearTimeout(reqTimeout);
@@ -118560,7 +118666,7 @@ function fetch(url, opts) {
 							size: request.size
 						};
 
-						if (!isDomainOrSubdomain(request.url, locationURL)) {
+						if (!isDomainOrSubdomain(request.url, locationURL) || !isSameProtocol(request.url, locationURL)) {
 							for (const name of ['authorization', 'www-authenticate', 'cookie', 'cookie2']) {
 								requestOpts.headers.delete(name);
 							}
@@ -118653,6 +118759,13 @@ function fetch(url, opts) {
 					response = new Response(body, response_options);
 					resolve(response);
 				});
+				raw.on('end', function () {
+					// some old IIS servers return zero-length OK deflate responses, so 'data' is never emitted.
+					if (!response) {
+						response = new Response(body, response_options);
+						resolve(response);
+					}
+				});
 				return;
 			}
 
@@ -118672,6 +118785,41 @@ function fetch(url, opts) {
 		writeToStream(req, request);
 	});
 }
+function fixResponseChunkedTransferBadEnding(request, errorCallback) {
+	let socket;
+
+	request.on('socket', function (s) {
+		socket = s;
+	});
+
+	request.on('response', function (response) {
+		const headers = response.headers;
+
+		if (headers['transfer-encoding'] === 'chunked' && !headers['content-length']) {
+			response.once('close', function (hadError) {
+				// if a data listener is still present we didn't end cleanly
+				const hasDataListener = socket.listenerCount('data') > 0;
+
+				if (hasDataListener && !hadError) {
+					const err = new Error('Premature close');
+					err.code = 'ERR_STREAM_PREMATURE_CLOSE';
+					errorCallback(err);
+				}
+			});
+		}
+	});
+}
+
+function destroyStream(stream, err) {
+	if (stream.destroy) {
+		stream.destroy(err);
+	} else {
+		// node < 8
+		stream.emit('error', err);
+		stream.end();
+	}
+}
+
 /**
  * Redirect code matching
  *
@@ -118821,7 +118969,11 @@ class NodeFetchHttpClient {
       body = uploadReportStream;
     }
     const platformSpecificRequestInit = await this.prepareRequest(httpRequest);
-    const requestInit = Object.assign({ body: body, headers: httpRequest.headers.rawHeaders(), method: httpRequest.method, signal: abortController.signal, redirect: "manual" }, platformSpecificRequestInit);
+    const requestInit = Object.assign({ body: body, headers: httpRequest.headers.rawHeaders(), method: httpRequest.method, 
+      // the types for RequestInit are from the browser, which expects AbortSignal to
+      // have `reason` and `throwIfAborted`, but these don't exist on our polyfill
+      // for Node.
+      signal: abortController.signal, redirect: "manual" }, platformSpecificRequestInit);
     let operationResponse;
     try {
       const response = await this.fetch(httpRequest.url, requestInit);
@@ -119069,7 +119221,7 @@ function __asyncGenerator(thisArg, _arguments, generator) {
 function __asyncDelegator(o) {
   var i, p;
   return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-  function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+  function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
 }
 
 function __asyncValues(o) {
@@ -119347,12 +119499,16 @@ function requireUtility () {
 	return Utility;
 }
 
-var XMLDOMImplementation = {exports: {}};
+var XMLDOMImplementationExports = {};
+var XMLDOMImplementation = {
+  get exports(){ return XMLDOMImplementationExports; },
+  set exports(v){ XMLDOMImplementationExports = v; },
+};
 
 var hasRequiredXMLDOMImplementation;
 
 function requireXMLDOMImplementation () {
-	if (hasRequiredXMLDOMImplementation) return XMLDOMImplementation.exports;
+	if (hasRequiredXMLDOMImplementation) return XMLDOMImplementationExports;
 	hasRequiredXMLDOMImplementation = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119385,19 +119541,31 @@ function requireXMLDOMImplementation () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLDOMImplementation.exports;
+	return XMLDOMImplementationExports;
 }
 
-var XMLDocument = {exports: {}};
+var XMLDocumentExports = {};
+var XMLDocument = {
+  get exports(){ return XMLDocumentExports; },
+  set exports(v){ XMLDocumentExports = v; },
+};
 
-var XMLDOMConfiguration = {exports: {}};
+var XMLDOMConfigurationExports = {};
+var XMLDOMConfiguration = {
+  get exports(){ return XMLDOMConfigurationExports; },
+  set exports(v){ XMLDOMConfigurationExports = v; },
+};
 
-var XMLDOMErrorHandler = {exports: {}};
+var XMLDOMErrorHandlerExports = {};
+var XMLDOMErrorHandler = {
+  get exports(){ return XMLDOMErrorHandlerExports; },
+  set exports(v){ XMLDOMErrorHandlerExports = v; },
+};
 
 var hasRequiredXMLDOMErrorHandler;
 
 function requireXMLDOMErrorHandler () {
-	if (hasRequiredXMLDOMErrorHandler) return XMLDOMErrorHandler.exports;
+	if (hasRequiredXMLDOMErrorHandler) return XMLDOMErrorHandlerExports;
 	hasRequiredXMLDOMErrorHandler = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119414,15 +119582,19 @@ function requireXMLDOMErrorHandler () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLDOMErrorHandler.exports;
+	return XMLDOMErrorHandlerExports;
 }
 
-var XMLDOMStringList = {exports: {}};
+var XMLDOMStringListExports = {};
+var XMLDOMStringList = {
+  get exports(){ return XMLDOMStringListExports; },
+  set exports(v){ XMLDOMStringListExports = v; },
+};
 
 var hasRequiredXMLDOMStringList;
 
 function requireXMLDOMStringList () {
-	if (hasRequiredXMLDOMStringList) return XMLDOMStringList.exports;
+	if (hasRequiredXMLDOMStringList) return XMLDOMStringListExports;
 	hasRequiredXMLDOMStringList = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119451,13 +119623,13 @@ function requireXMLDOMStringList () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLDOMStringList.exports;
+	return XMLDOMStringListExports;
 }
 
 var hasRequiredXMLDOMConfiguration;
 
 function requireXMLDOMConfiguration () {
-	if (hasRequiredXMLDOMConfiguration) return XMLDOMConfiguration.exports;
+	if (hasRequiredXMLDOMConfiguration) return XMLDOMConfigurationExports;
 	hasRequiredXMLDOMConfiguration = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119522,19 +119694,31 @@ function requireXMLDOMConfiguration () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLDOMConfiguration.exports;
+	return XMLDOMConfigurationExports;
 }
 
-var XMLNode = {exports: {}};
+var XMLNodeExports = {};
+var XMLNode = {
+  get exports(){ return XMLNodeExports; },
+  set exports(v){ XMLNodeExports = v; },
+};
 
-var XMLElement = {exports: {}};
+var XMLElementExports = {};
+var XMLElement = {
+  get exports(){ return XMLElementExports; },
+  set exports(v){ XMLElementExports = v; },
+};
 
-var NodeType = {exports: {}};
+var NodeTypeExports = {};
+var NodeType = {
+  get exports(){ return NodeTypeExports; },
+  set exports(v){ NodeTypeExports = v; },
+};
 
 var hasRequiredNodeType;
 
 function requireNodeType () {
-	if (hasRequiredNodeType) return NodeType.exports;
+	if (hasRequiredNodeType) return NodeTypeExports;
 	hasRequiredNodeType = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119559,15 +119743,19 @@ function requireNodeType () {
 	  };
 
 	}).call(commonjsGlobal);
-	return NodeType.exports;
+	return NodeTypeExports;
 }
 
-var XMLAttribute = {exports: {}};
+var XMLAttributeExports = {};
+var XMLAttribute = {
+  get exports(){ return XMLAttributeExports; },
+  set exports(v){ XMLAttributeExports = v; },
+};
 
 var hasRequiredXMLAttribute;
 
 function requireXMLAttribute () {
-	if (hasRequiredXMLAttribute) return XMLAttribute.exports;
+	if (hasRequiredXMLAttribute) return XMLAttributeExports;
 	hasRequiredXMLAttribute = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119677,15 +119865,19 @@ function requireXMLAttribute () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLAttribute.exports;
+	return XMLAttributeExports;
 }
 
-var XMLNamedNodeMap = {exports: {}};
+var XMLNamedNodeMapExports = {};
+var XMLNamedNodeMap = {
+  get exports(){ return XMLNamedNodeMapExports; },
+  set exports(v){ XMLNamedNodeMapExports = v; },
+};
 
 var hasRequiredXMLNamedNodeMap;
 
 function requireXMLNamedNodeMap () {
-	if (hasRequiredXMLNamedNodeMap) return XMLNamedNodeMap.exports;
+	if (hasRequiredXMLNamedNodeMap) return XMLNamedNodeMapExports;
 	hasRequiredXMLNamedNodeMap = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -119744,13 +119936,13 @@ function requireXMLNamedNodeMap () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLNamedNodeMap.exports;
+	return XMLNamedNodeMapExports;
 }
 
 var hasRequiredXMLElement;
 
 function requireXMLElement () {
-	if (hasRequiredXMLElement) return XMLElement.exports;
+	if (hasRequiredXMLElement) return XMLElementExports;
 	hasRequiredXMLElement = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120050,17 +120242,25 @@ function requireXMLElement () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLElement.exports;
+	return XMLElementExports;
 }
 
-var XMLCData = {exports: {}};
+var XMLCDataExports = {};
+var XMLCData = {
+  get exports(){ return XMLCDataExports; },
+  set exports(v){ XMLCDataExports = v; },
+};
 
-var XMLCharacterData = {exports: {}};
+var XMLCharacterDataExports = {};
+var XMLCharacterData = {
+  get exports(){ return XMLCharacterDataExports; },
+  set exports(v){ XMLCharacterDataExports = v; },
+};
 
 var hasRequiredXMLCharacterData;
 
 function requireXMLCharacterData () {
-	if (hasRequiredXMLCharacterData) return XMLCharacterData.exports;
+	if (hasRequiredXMLCharacterData) return XMLCharacterDataExports;
 	hasRequiredXMLCharacterData = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120141,13 +120341,13 @@ function requireXMLCharacterData () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLCharacterData.exports;
+	return XMLCharacterDataExports;
 }
 
 var hasRequiredXMLCData;
 
 function requireXMLCData () {
-	if (hasRequiredXMLCData) return XMLCData.exports;
+	if (hasRequiredXMLCData) return XMLCDataExports;
 	hasRequiredXMLCData = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120185,15 +120385,19 @@ function requireXMLCData () {
 	  })(XMLCharacterData);
 
 	}).call(commonjsGlobal);
-	return XMLCData.exports;
+	return XMLCDataExports;
 }
 
-var XMLComment = {exports: {}};
+var XMLCommentExports = {};
+var XMLComment = {
+  get exports(){ return XMLCommentExports; },
+  set exports(v){ XMLCommentExports = v; },
+};
 
 var hasRequiredXMLComment;
 
 function requireXMLComment () {
-	if (hasRequiredXMLComment) return XMLComment.exports;
+	if (hasRequiredXMLComment) return XMLCommentExports;
 	hasRequiredXMLComment = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120230,15 +120434,19 @@ function requireXMLComment () {
 	  })(XMLCharacterData);
 
 	}).call(commonjsGlobal);
-	return XMLComment.exports;
+	return XMLCommentExports;
 }
 
-var XMLDeclaration = {exports: {}};
+var XMLDeclarationExports = {};
+var XMLDeclaration = {
+  get exports(){ return XMLDeclarationExports; },
+  set exports(v){ XMLDeclarationExports = v; },
+};
 
 var hasRequiredXMLDeclaration;
 
 function requireXMLDeclaration () {
-	if (hasRequiredXMLDeclaration) return XMLDeclaration.exports;
+	if (hasRequiredXMLDeclaration) return XMLDeclarationExports;
 	hasRequiredXMLDeclaration = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120283,17 +120491,25 @@ function requireXMLDeclaration () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDeclaration.exports;
+	return XMLDeclarationExports;
 }
 
-var XMLDocType = {exports: {}};
+var XMLDocTypeExports = {};
+var XMLDocType = {
+  get exports(){ return XMLDocTypeExports; },
+  set exports(v){ XMLDocTypeExports = v; },
+};
 
-var XMLDTDAttList = {exports: {}};
+var XMLDTDAttListExports = {};
+var XMLDTDAttList = {
+  get exports(){ return XMLDTDAttListExports; },
+  set exports(v){ XMLDTDAttListExports = v; },
+};
 
 var hasRequiredXMLDTDAttList;
 
 function requireXMLDTDAttList () {
-	if (hasRequiredXMLDTDAttList) return XMLDTDAttList.exports;
+	if (hasRequiredXMLDTDAttList) return XMLDTDAttListExports;
 	hasRequiredXMLDTDAttList = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120350,15 +120566,19 @@ function requireXMLDTDAttList () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDTDAttList.exports;
+	return XMLDTDAttListExports;
 }
 
-var XMLDTDEntity = {exports: {}};
+var XMLDTDEntityExports = {};
+var XMLDTDEntity = {
+  get exports(){ return XMLDTDEntityExports; },
+  set exports(v){ XMLDTDEntityExports = v; },
+};
 
 var hasRequiredXMLDTDEntity;
 
 function requireXMLDTDEntity () {
-	if (hasRequiredXMLDTDEntity) return XMLDTDEntity.exports;
+	if (hasRequiredXMLDTDEntity) return XMLDTDEntityExports;
 	hasRequiredXMLDTDEntity = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120457,15 +120677,19 @@ function requireXMLDTDEntity () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDTDEntity.exports;
+	return XMLDTDEntityExports;
 }
 
-var XMLDTDElement = {exports: {}};
+var XMLDTDElementExports = {};
+var XMLDTDElement = {
+  get exports(){ return XMLDTDElementExports; },
+  set exports(v){ XMLDTDElementExports = v; },
+};
 
 var hasRequiredXMLDTDElement;
 
 function requireXMLDTDElement () {
-	if (hasRequiredXMLDTDElement) return XMLDTDElement.exports;
+	if (hasRequiredXMLDTDElement) return XMLDTDElementExports;
 	hasRequiredXMLDTDElement = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120505,15 +120729,19 @@ function requireXMLDTDElement () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDTDElement.exports;
+	return XMLDTDElementExports;
 }
 
-var XMLDTDNotation = {exports: {}};
+var XMLDTDNotationExports = {};
+var XMLDTDNotation = {
+  get exports(){ return XMLDTDNotationExports; },
+  set exports(v){ XMLDTDNotationExports = v; },
+};
 
 var hasRequiredXMLDTDNotation;
 
 function requireXMLDTDNotation () {
-	if (hasRequiredXMLDTDNotation) return XMLDTDNotation.exports;
+	if (hasRequiredXMLDTDNotation) return XMLDTDNotationExports;
 	hasRequiredXMLDTDNotation = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120567,13 +120795,13 @@ function requireXMLDTDNotation () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDTDNotation.exports;
+	return XMLDTDNotationExports;
 }
 
 var hasRequiredXMLDocType;
 
 function requireXMLDocType () {
-	if (hasRequiredXMLDocType) return XMLDocType.exports;
+	if (hasRequiredXMLDocType) return XMLDocTypeExports;
 	hasRequiredXMLDocType = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120761,15 +120989,19 @@ function requireXMLDocType () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDocType.exports;
+	return XMLDocTypeExports;
 }
 
-var XMLRaw = {exports: {}};
+var XMLRawExports = {};
+var XMLRaw = {
+  get exports(){ return XMLRawExports; },
+  set exports(v){ XMLRawExports = v; },
+};
 
 var hasRequiredXMLRaw;
 
 function requireXMLRaw () {
-	if (hasRequiredXMLRaw) return XMLRaw.exports;
+	if (hasRequiredXMLRaw) return XMLRawExports;
 	hasRequiredXMLRaw = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120805,15 +121037,19 @@ function requireXMLRaw () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLRaw.exports;
+	return XMLRawExports;
 }
 
-var XMLText = {exports: {}};
+var XMLTextExports = {};
+var XMLText = {
+  get exports(){ return XMLTextExports; },
+  set exports(v){ XMLTextExports = v; },
+};
 
 var hasRequiredXMLText;
 
 function requireXMLText () {
-	if (hasRequiredXMLText) return XMLText.exports;
+	if (hasRequiredXMLText) return XMLTextExports;
 	hasRequiredXMLText = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120883,15 +121119,19 @@ function requireXMLText () {
 	  })(XMLCharacterData);
 
 	}).call(commonjsGlobal);
-	return XMLText.exports;
+	return XMLTextExports;
 }
 
-var XMLProcessingInstruction = {exports: {}};
+var XMLProcessingInstructionExports = {};
+var XMLProcessingInstruction = {
+  get exports(){ return XMLProcessingInstructionExports; },
+  set exports(v){ XMLProcessingInstructionExports = v; },
+};
 
 var hasRequiredXMLProcessingInstruction;
 
 function requireXMLProcessingInstruction () {
-	if (hasRequiredXMLProcessingInstruction) return XMLProcessingInstruction.exports;
+	if (hasRequiredXMLProcessingInstruction) return XMLProcessingInstructionExports;
 	hasRequiredXMLProcessingInstruction = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120941,15 +121181,19 @@ function requireXMLProcessingInstruction () {
 	  })(XMLCharacterData);
 
 	}).call(commonjsGlobal);
-	return XMLProcessingInstruction.exports;
+	return XMLProcessingInstructionExports;
 }
 
-var XMLDummy = {exports: {}};
+var XMLDummyExports = {};
+var XMLDummy = {
+  get exports(){ return XMLDummyExports; },
+  set exports(v){ XMLDummyExports = v; },
+};
 
 var hasRequiredXMLDummy;
 
 function requireXMLDummy () {
-	if (hasRequiredXMLDummy) return XMLDummy.exports;
+	if (hasRequiredXMLDummy) return XMLDummyExports;
 	hasRequiredXMLDummy = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -120982,15 +121226,19 @@ function requireXMLDummy () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDummy.exports;
+	return XMLDummyExports;
 }
 
-var XMLNodeList = {exports: {}};
+var XMLNodeListExports = {};
+var XMLNodeList = {
+  get exports(){ return XMLNodeListExports; },
+  set exports(v){ XMLNodeListExports = v; },
+};
 
 var hasRequiredXMLNodeList;
 
 function requireXMLNodeList () {
-	if (hasRequiredXMLNodeList) return XMLNodeList.exports;
+	if (hasRequiredXMLNodeList) return XMLNodeListExports;
 	hasRequiredXMLNodeList = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -121019,15 +121267,19 @@ function requireXMLNodeList () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLNodeList.exports;
+	return XMLNodeListExports;
 }
 
-var DocumentPosition = {exports: {}};
+var DocumentPositionExports = {};
+var DocumentPosition = {
+  get exports(){ return DocumentPositionExports; },
+  set exports(v){ DocumentPositionExports = v; },
+};
 
 var hasRequiredDocumentPosition;
 
 function requireDocumentPosition () {
-	if (hasRequiredDocumentPosition) return DocumentPosition.exports;
+	if (hasRequiredDocumentPosition) return DocumentPositionExports;
 	hasRequiredDocumentPosition = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -121041,13 +121293,13 @@ function requireDocumentPosition () {
 	  };
 
 	}).call(commonjsGlobal);
-	return DocumentPosition.exports;
+	return DocumentPositionExports;
 }
 
 var hasRequiredXMLNode;
 
 function requireXMLNode () {
-	if (hasRequiredXMLNode) return XMLNode.exports;
+	if (hasRequiredXMLNode) return XMLNodeExports;
 	hasRequiredXMLNode = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -121832,15 +122084,19 @@ function requireXMLNode () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLNode.exports;
+	return XMLNodeExports;
 }
 
-var XMLStringifier = {exports: {}};
+var XMLStringifierExports = {};
+var XMLStringifier = {
+  get exports(){ return XMLStringifierExports; },
+  set exports(v){ XMLStringifierExports = v; },
+};
 
 var hasRequiredXMLStringifier;
 
 function requireXMLStringifier () {
-	if (hasRequiredXMLStringifier) return XMLStringifier.exports;
+	if (hasRequiredXMLStringifier) return XMLStringifierExports;
 	hasRequiredXMLStringifier = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -122081,19 +122337,31 @@ function requireXMLStringifier () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLStringifier.exports;
+	return XMLStringifierExports;
 }
 
-var XMLStringWriter = {exports: {}};
+var XMLStringWriterExports = {};
+var XMLStringWriter = {
+  get exports(){ return XMLStringWriterExports; },
+  set exports(v){ XMLStringWriterExports = v; },
+};
 
-var XMLWriterBase = {exports: {}};
+var XMLWriterBaseExports = {};
+var XMLWriterBase = {
+  get exports(){ return XMLWriterBaseExports; },
+  set exports(v){ XMLWriterBaseExports = v; },
+};
 
-var WriterState = {exports: {}};
+var WriterStateExports = {};
+var WriterState = {
+  get exports(){ return WriterStateExports; },
+  set exports(v){ WriterStateExports = v; },
+};
 
 var hasRequiredWriterState;
 
 function requireWriterState () {
-	if (hasRequiredWriterState) return WriterState.exports;
+	if (hasRequiredWriterState) return WriterStateExports;
 	hasRequiredWriterState = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -122105,13 +122373,13 @@ function requireWriterState () {
 	  };
 
 	}).call(commonjsGlobal);
-	return WriterState.exports;
+	return WriterStateExports;
 }
 
 var hasRequiredXMLWriterBase;
 
 function requireXMLWriterBase () {
-	if (hasRequiredXMLWriterBase) return XMLWriterBase.exports;
+	if (hasRequiredXMLWriterBase) return XMLWriterBaseExports;
 	hasRequiredXMLWriterBase = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -122541,13 +122809,13 @@ function requireXMLWriterBase () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLWriterBase.exports;
+	return XMLWriterBaseExports;
 }
 
 var hasRequiredXMLStringWriter;
 
 function requireXMLStringWriter () {
-	if (hasRequiredXMLStringWriter) return XMLStringWriter.exports;
+	if (hasRequiredXMLStringWriter) return XMLStringWriterExports;
 	hasRequiredXMLStringWriter = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -122584,13 +122852,13 @@ function requireXMLStringWriter () {
 	  })(XMLWriterBase);
 
 	}).call(commonjsGlobal);
-	return XMLStringWriter.exports;
+	return XMLStringWriterExports;
 }
 
 var hasRequiredXMLDocument;
 
 function requireXMLDocument () {
-	if (hasRequiredXMLDocument) return XMLDocument.exports;
+	if (hasRequiredXMLDocument) return XMLDocumentExports;
 	hasRequiredXMLDocument = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -122834,15 +123102,19 @@ function requireXMLDocument () {
 	  })(XMLNode);
 
 	}).call(commonjsGlobal);
-	return XMLDocument.exports;
+	return XMLDocumentExports;
 }
 
-var XMLDocumentCB = {exports: {}};
+var XMLDocumentCBExports = {};
+var XMLDocumentCB = {
+  get exports(){ return XMLDocumentCBExports; },
+  set exports(v){ XMLDocumentCBExports = v; },
+};
 
 var hasRequiredXMLDocumentCB;
 
 function requireXMLDocumentCB () {
-	if (hasRequiredXMLDocumentCB) return XMLDocumentCB.exports;
+	if (hasRequiredXMLDocumentCB) return XMLDocumentCBExports;
 	hasRequiredXMLDocumentCB = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -123372,15 +123644,19 @@ function requireXMLDocumentCB () {
 	  })();
 
 	}).call(commonjsGlobal);
-	return XMLDocumentCB.exports;
+	return XMLDocumentCBExports;
 }
 
-var XMLStreamWriter = {exports: {}};
+var XMLStreamWriterExports = {};
+var XMLStreamWriter = {
+  get exports(){ return XMLStreamWriterExports; },
+  set exports(v){ XMLStreamWriterExports = v; },
+};
 
 var hasRequiredXMLStreamWriter;
 
 function requireXMLStreamWriter () {
-	if (hasRequiredXMLStreamWriter) return XMLStreamWriter.exports;
+	if (hasRequiredXMLStreamWriter) return XMLStreamWriterExports;
 	hasRequiredXMLStreamWriter = 1;
 	// Generated by CoffeeScript 1.12.7
 	(function() {
@@ -123556,7 +123832,7 @@ function requireXMLStreamWriter () {
 	  })(XMLWriterBase);
 
 	}).call(commonjsGlobal);
-	return XMLStreamWriter.exports;
+	return XMLStreamWriterExports;
 }
 
 var hasRequiredLib;
@@ -125422,7 +125698,7 @@ function requireParser () {
 
 		  sax = requireSax();
 
-		  events = events$2.exports;
+		  events = eventsExports;
 
 		  bom = requireBom();
 
@@ -126330,20 +126606,18 @@ function isDefined(thing) {
 // Copyright (c) Microsoft Corporation.
 const StandardAbortMessage$1 = "The operation was aborted.";
 /**
- * A wrapper for setTimeout that resolves a promise after delayInMs milliseconds.
- * @param delayInMs - The number of milliseconds to be delayed.
- * @param value - The value to be resolved with after a timeout of t milliseconds.
+ * A wrapper for setTimeout that resolves a promise after timeInMs milliseconds.
+ * @param timeInMs - The number of milliseconds to be delayed.
  * @param options - The options for delay - currently abort options
- *   @param abortSignal - The abortSignal associated with containing operation.
- *   @param abortErrorMsg - The abort error message associated with containing operation.
- * @returns - Resolved promise
+ * @returns Promise that is resolved after timeInMs
  */
-function delay$1(delayInMs, value, options) {
+function delay$1(timeInMs, options) {
   return new Promise((resolve, reject) => {
     let timer = undefined;
     let onAborted = undefined;
     const rejectOnAbort = () => {
-      return reject(new AbortError$1((options === null || options === void 0 ? void 0 : options.abortErrorMsg) ? options === null || options === void 0 ? void 0 : options.abortErrorMsg : StandardAbortMessage$1));
+      var _a;
+      return reject(new AbortError$1((_a = options === null || options === void 0 ? void 0 : options.abortErrorMsg) !== null && _a !== void 0 ? _a : StandardAbortMessage$1));
     };
     const removeListeners = () => {
       if ((options === null || options === void 0 ? void 0 : options.abortSignal) && onAborted) {
@@ -126362,8 +126636,8 @@ function delay$1(delayInMs, value, options) {
     }
     timer = setTimeout(() => {
       removeListeners();
-      resolve(value);
-    }, delayInMs);
+      resolve();
+    }, timeInMs);
     if (options === null || options === void 0 ? void 0 : options.abortSignal) {
       options.abortSignal.addEventListener("abort", onAborted);
     }
@@ -127425,7 +127699,7 @@ class ThrottlingRetryPolicy extends BaseRequestPolicy {
       const delayInMs = ThrottlingRetryPolicy.parseRetryAfterHeader(retryAfterHeader);
       if (delayInMs) {
         this.numberOfRetries += 1;
-        await delay$1(delayInMs, undefined, {
+        await delay$1(delayInMs, {
           abortSignal: httpRequest.abortSignal,
           abortErrorMsg: StandardAbortMessage,
         });
@@ -127499,7 +127773,7 @@ var _globalThis = typeof globalThis === 'object' ? globalThis : global;
  * limitations under the License.
  */
 // this is autogenerated file, see scripts/version-update.js
-var VERSION$1 = '1.2.0';
+var VERSION$1 = '1.4.0';
 
 /*
  * Copyright The OpenTelemetry Authors
@@ -127689,6 +127963,31 @@ function unregisterGlobal(type, diag) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+var __read$3 = (undefined && undefined.__read) || function (o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+    while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  }
+  catch (error) { e = { error: error }; }
+  finally {
+    try {
+      if (r && !r.done && (m = i["return"])) m.call(i);
+    }
+    finally { if (e) throw e.error; }
+  }
+  return ar;
+};
+var __spreadArray$3 = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+};
 /**
  * Component Logger which is meant to be used as part of any component which
  * will add automatically additional namespace in front of the log message.
@@ -127746,7 +128045,7 @@ function logProxy(funcName, namespace, args) {
     return;
   }
   args.unshift(namespace);
-  return logger[funcName].apply(logger, args);
+  return logger[funcName].apply(logger, __spreadArray$3([], __read$3(args), false));
 }
 
 /*
@@ -127845,7 +128144,32 @@ function createLogLevelDiagLogger(maxLevel, logger) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var API_NAME$3 = 'diag';
+var __read$2 = (undefined && undefined.__read) || function (o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+    while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  }
+  catch (error) { e = { error: error }; }
+  finally {
+    try {
+      if (r && !r.done && (m = i["return"])) m.call(i);
+    }
+    finally { if (e) throw e.error; }
+  }
+  return ar;
+};
+var __spreadArray$2 = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+};
+var API_NAME$2 = 'diag';
 /**
  * Singleton object which represents the entry point to the OpenTelemetry internal
  * diagnostic API
@@ -127866,15 +128190,15 @@ var DiagAPI = /** @class */ (function () {
         // shortcut if logger not set
         if (!logger)
           return;
-        return logger[funcName].apply(logger, args);
+        return logger[funcName].apply(logger, __spreadArray$2([], __read$2(args), false));
       };
     }
     // Using self local variable for minification purposes as 'this' cannot be minified
     var self = this;
     // DiagAPI specific functions
-    self.setLogger = function (logger, logLevel) {
-      var _a, _b;
-      if (logLevel === void 0) { logLevel = DiagLogLevel.INFO; }
+    var setLogger = function (logger, optionsOrLogLevel) {
+      var _a, _b, _c;
+      if (optionsOrLogLevel === void 0) { optionsOrLogLevel = { logLevel: DiagLogLevel.INFO }; }
       if (logger === self) {
         // There isn't much we can do here.
         // Logging to the console might break the user application.
@@ -127883,18 +128207,24 @@ var DiagAPI = /** @class */ (function () {
         self.error((_a = err.stack) !== null && _a !== void 0 ? _a : err.message);
         return false;
       }
+      if (typeof optionsOrLogLevel === 'number') {
+        optionsOrLogLevel = {
+          logLevel: optionsOrLogLevel,
+        };
+      }
       var oldLogger = getGlobal('diag');
-      var newLogger = createLogLevelDiagLogger(logLevel, logger);
+      var newLogger = createLogLevelDiagLogger((_b = optionsOrLogLevel.logLevel) !== null && _b !== void 0 ? _b : DiagLogLevel.INFO, logger);
       // There already is an logger registered. We'll let it know before overwriting it.
-      if (oldLogger) {
-        var stack = (_b = new Error().stack) !== null && _b !== void 0 ? _b : '<failed to generate stacktrace>';
+      if (oldLogger && !optionsOrLogLevel.suppressOverrideMessage) {
+        var stack = (_c = new Error().stack) !== null && _c !== void 0 ? _c : '<failed to generate stacktrace>';
         oldLogger.warn("Current logger will be overwritten from " + stack);
         newLogger.warn("Current logger will overwrite one already registered from " + stack);
       }
       return registerGlobal('diag', newLogger, self, true);
     };
+    self.setLogger = setLogger;
     self.disable = function () {
-      unregisterGlobal(API_NAME$3, self);
+      unregisterGlobal(API_NAME$2, self);
     };
     self.createComponentLogger = function (options) {
       return new DiagComponentLogger(options);
@@ -127914,130 +128244,6 @@ var DiagAPI = /** @class */ (function () {
   };
   return DiagAPI;
 }());
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var BaggageImpl = /** @class */ (function () {
-  function BaggageImpl(entries) {
-    this._entries = entries ? new Map(entries) : new Map();
-  }
-  BaggageImpl.prototype.getEntry = function (key) {
-    var entry = this._entries.get(key);
-    if (!entry) {
-      return undefined;
-    }
-    return Object.assign({}, entry);
-  };
-  BaggageImpl.prototype.getAllEntries = function () {
-    return Array.from(this._entries.entries()).map(function (_a) {
-      var k = _a[0], v = _a[1];
-      return [k, v];
-    });
-  };
-  BaggageImpl.prototype.setEntry = function (key, entry) {
-    var newBaggage = new BaggageImpl(this._entries);
-    newBaggage._entries.set(key, entry);
-    return newBaggage;
-  };
-  BaggageImpl.prototype.removeEntry = function (key) {
-    var newBaggage = new BaggageImpl(this._entries);
-    newBaggage._entries.delete(key);
-    return newBaggage;
-  };
-  BaggageImpl.prototype.removeEntries = function () {
-    var keys = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-      keys[_i] = arguments[_i];
-    }
-    var newBaggage = new BaggageImpl(this._entries);
-    for (var _a = 0, keys_1 = keys; _a < keys_1.length; _a++) {
-      var key = keys_1[_a];
-      newBaggage._entries.delete(key);
-    }
-    return newBaggage;
-  };
-  BaggageImpl.prototype.clear = function () {
-    return new BaggageImpl();
-  };
-  return BaggageImpl;
-}());
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-DiagAPI.instance();
-/**
- * Create a new Baggage with optional entries
- *
- * @param entries An array of baggage entries the new baggage should contain
- */
-function createBaggage(entries) {
-  if (entries === void 0) { entries = {}; }
-  return new BaggageImpl(new Map(Object.entries(entries)));
-}
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var defaultTextMapGetter = {
-  get: function (carrier, key) {
-    if (carrier == null) {
-      return undefined;
-    }
-    return carrier[key];
-  },
-  keys: function (carrier) {
-    if (carrier == null) {
-      return [];
-    }
-    return Object.keys(carrier);
-  },
-};
-var defaultTextMapSetter = {
-  set: function (carrier, key, value) {
-    if (carrier == null) {
-      return;
-    }
-    carrier[key] = value;
-  },
-};
 
 /*
  * Copyright The OpenTelemetry Authors
@@ -128106,10 +128312,30 @@ var ROOT_CONTEXT = new BaseContext();
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var __spreadArray$1 = (undefined && undefined.__spreadArray) || function (to, from) {
-  for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-    to[j] = from[i];
-  return to;
+var __read$1 = (undefined && undefined.__read) || function (o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+    while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  }
+  catch (error) { e = { error: error }; }
+  finally {
+    try {
+      if (r && !r.done && (m = i["return"])) m.call(i);
+    }
+    finally { if (e) throw e.error; }
+  }
+  return ar;
+};
+var __spreadArray$1 = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
 };
 var NoopContextManager = /** @class */ (function () {
   function NoopContextManager() {
@@ -128122,7 +128348,7 @@ var NoopContextManager = /** @class */ (function () {
     for (var _i = 3; _i < arguments.length; _i++) {
       args[_i - 3] = arguments[_i];
     }
-    return fn.call.apply(fn, __spreadArray$1([thisArg], args));
+    return fn.call.apply(fn, __spreadArray$1([thisArg], __read$1(args), false));
   };
   NoopContextManager.prototype.bind = function (_context, target) {
     return target;
@@ -128151,12 +128377,32 @@ var NoopContextManager = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from) {
-  for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
-    to[j] = from[i];
-  return to;
+var __read = (undefined && undefined.__read) || function (o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+    while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  }
+  catch (error) { e = { error: error }; }
+  finally {
+    try {
+      if (r && !r.done && (m = i["return"])) m.call(i);
+    }
+    finally { if (e) throw e.error; }
+  }
+  return ar;
 };
-var API_NAME$2 = 'context';
+var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+};
+var API_NAME$1 = 'context';
 var NOOP_CONTEXT_MANAGER = new NoopContextManager();
 /**
  * Singleton object which represents the entry point to the OpenTelemetry Context API
@@ -128178,7 +128424,7 @@ var ContextAPI = /** @class */ (function () {
    * @returns true if the context manager was successfully registered, else false
    */
   ContextAPI.prototype.setGlobalContextManager = function (contextManager) {
-    return registerGlobal(API_NAME$2, contextManager, DiagAPI.instance());
+    return registerGlobal(API_NAME$1, contextManager, DiagAPI.instance());
   };
   /**
    * Get the currently active context
@@ -128200,7 +128446,7 @@ var ContextAPI = /** @class */ (function () {
     for (var _i = 3; _i < arguments.length; _i++) {
       args[_i - 3] = arguments[_i];
     }
-    return (_a = this._getContextManager()).with.apply(_a, __spreadArray([context, fn, thisArg], args));
+    return (_a = this._getContextManager()).with.apply(_a, __spreadArray([context, fn, thisArg], __read(args), false));
   };
   /**
    * Bind a context to a target function or event emitter
@@ -128212,12 +128458,12 @@ var ContextAPI = /** @class */ (function () {
     return this._getContextManager().bind(context, target);
   };
   ContextAPI.prototype._getContextManager = function () {
-    return getGlobal(API_NAME$2) || NOOP_CONTEXT_MANAGER;
+    return getGlobal(API_NAME$1) || NOOP_CONTEXT_MANAGER;
   };
   /** Disable and remove the global context manager */
   ContextAPI.prototype.disable = function () {
     this._getContextManager().disable();
-    unregisterGlobal(API_NAME$2, DiagAPI.instance());
+    unregisterGlobal(API_NAME$1, DiagAPI.instance());
   };
   return ContextAPI;
 }());
@@ -128453,7 +128699,7 @@ function wrapSpanContext(spanContext) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var context$2 = ContextAPI.getInstance();
+var contextApi = ContextAPI.getInstance();
 /**
  * No-op implementations of {@link Tracer}.
  */
@@ -128462,6 +128708,7 @@ var NoopTracer = /** @class */ (function () {
   }
   // startSpan starts a noop span.
   NoopTracer.prototype.startSpan = function (name, options, context) {
+    if (context === void 0) { context = contextApi.active(); }
     var root = Boolean(options === null || options === void 0 ? void 0 : options.root);
     if (root) {
       return new NonRecordingSpan();
@@ -128494,10 +128741,10 @@ var NoopTracer = /** @class */ (function () {
       ctx = arg3;
       fn = arg4;
     }
-    var parentContext = ctx !== null && ctx !== void 0 ? ctx : context$2.active();
+    var parentContext = ctx !== null && ctx !== void 0 ? ctx : contextApi.active();
     var span = this.startSpan(name, opts, parentContext);
     var contextWithSpanSet = setSpan$1(parentContext, span);
-    return context$2.with(contextWithSpanSet, fn, undefined, span);
+    return contextApi.with(contextWithSpanSet, fn, undefined, span);
   };
   return NoopTracer;
 }());
@@ -128655,29 +128902,8 @@ var ProxyTracerProvider = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * @deprecated use the one declared in @opentelemetry/sdk-trace-base instead.
- * A sampling decision that determines how a {@link Span} will be recorded
- * and collected.
- */
-var SamplingDecision;
-(function (SamplingDecision) {
-  /**
-   * `Span.isRecording() === false`, span will not be recorded and all events
-   * and attributes will be dropped.
-   */
-  SamplingDecision[SamplingDecision["NOT_RECORD"] = 0] = "NOT_RECORD";
-  /**
-   * `Span.isRecording() === true`, but `Sampled` flag in {@link TraceFlags}
-   * MUST NOT be set.
-   */
-  SamplingDecision[SamplingDecision["RECORD"] = 1] = "RECORD";
-  /**
-   * `Span.isRecording() === true` AND `Sampled` flag in {@link TraceFlags}
-   * MUST be set.
-   */
-  SamplingDecision[SamplingDecision["RECORD_AND_SAMPLED"] = 2] = "RECORD_AND_SAMPLED";
-})(SamplingDecision || (SamplingDecision = {}));
+/** Entrypoint for context API */
+var context$1 = ContextAPI.getInstance();
 
 /*
  * Copyright The OpenTelemetry Authors
@@ -128694,70 +128920,7 @@ var SamplingDecision;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var SpanKind$1;
-(function (SpanKind) {
-  /** Default value. Indicates that the span is used internally. */
-  SpanKind[SpanKind["INTERNAL"] = 0] = "INTERNAL";
-  /**
-   * Indicates that the span covers server-side handling of an RPC or other
-   * remote request.
-   */
-  SpanKind[SpanKind["SERVER"] = 1] = "SERVER";
-  /**
-   * Indicates that the span covers the client-side wrapper around an RPC or
-   * other remote request.
-   */
-  SpanKind[SpanKind["CLIENT"] = 2] = "CLIENT";
-  /**
-   * Indicates that the span describes producer sending a message to a
-   * broker. Unlike client and server, there is no direct critical path latency
-   * relationship between producer and consumer spans.
-   */
-  SpanKind[SpanKind["PRODUCER"] = 3] = "PRODUCER";
-  /**
-   * Indicates that the span describes consumer receiving a message from a
-   * broker. Unlike client and server, there is no direct critical path latency
-   * relationship between producer and consumer spans.
-   */
-  SpanKind[SpanKind["CONSUMER"] = 4] = "CONSUMER";
-})(SpanKind$1 || (SpanKind$1 = {}));
-
-/**
- * An enumeration of status codes.
- */
-var SpanStatusCode$1;
-(function (SpanStatusCode) {
-  /**
-   * The default status.
-   */
-  SpanStatusCode[SpanStatusCode["UNSET"] = 0] = "UNSET";
-  /**
-   * The operation has been validated by an Application developer or
-   * Operator to have completed successfully.
-   */
-  SpanStatusCode[SpanStatusCode["OK"] = 1] = "OK";
-  /**
-   * The operation contains an error.
-   */
-  SpanStatusCode[SpanStatusCode["ERROR"] = 2] = "ERROR";
-})(SpanStatusCode$1 || (SpanStatusCode$1 = {}));
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var API_NAME$1 = 'trace';
+var API_NAME = 'trace';
 /**
  * Singleton object which represents the entry point to the OpenTelemetry Tracing API
  */
@@ -128787,7 +128950,7 @@ var TraceAPI = /** @class */ (function () {
    * @returns true if the tracer provider was successfully registered, else false
    */
   TraceAPI.prototype.setGlobalTracerProvider = function (provider) {
-    var success = registerGlobal(API_NAME$1, this._proxyTracerProvider, DiagAPI.instance());
+    var success = registerGlobal(API_NAME, this._proxyTracerProvider, DiagAPI.instance());
     if (success) {
       this._proxyTracerProvider.setDelegate(provider);
     }
@@ -128797,7 +128960,7 @@ var TraceAPI = /** @class */ (function () {
    * Returns the global tracer provider.
    */
   TraceAPI.prototype.getTracerProvider = function () {
-    return getGlobal(API_NAME$1) || this._proxyTracerProvider;
+    return getGlobal(API_NAME) || this._proxyTracerProvider;
   };
   /**
    * Returns a tracer from the global tracer provider.
@@ -128807,7 +128970,7 @@ var TraceAPI = /** @class */ (function () {
   };
   /** Remove the global tracer provider */
   TraceAPI.prototype.disable = function () {
-    unregisterGlobal(API_NAME$1, DiagAPI.instance());
+    unregisterGlobal(API_NAME, DiagAPI.instance());
     this._proxyTracerProvider = new ProxyTracerProvider();
   };
   return TraceAPI;
@@ -128828,179 +128991,8 @@ var TraceAPI = /** @class */ (function () {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * No-op implementations of {@link TextMapPropagator}.
- */
-var NoopTextMapPropagator = /** @class */ (function () {
-  function NoopTextMapPropagator() {
-  }
-  /** Noop inject function does nothing */
-  NoopTextMapPropagator.prototype.inject = function (_context, _carrier) { };
-  /** Noop extract function does nothing and returns the input context */
-  NoopTextMapPropagator.prototype.extract = function (context, _carrier) {
-    return context;
-  };
-  NoopTextMapPropagator.prototype.fields = function () {
-    return [];
-  };
-  return NoopTextMapPropagator;
-}());
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- * Baggage key
- */
-var BAGGAGE_KEY = createContextKey('OpenTelemetry Baggage Key');
-/**
- * Retrieve the current baggage from the given context
- *
- * @param {Context} Context that manage all context values
- * @returns {Baggage} Extracted baggage from the context
- */
-function getBaggage(context) {
-  return context.getValue(BAGGAGE_KEY) || undefined;
-}
-/**
- * Store a baggage in the given context
- *
- * @param {Context} Context that manage all context values
- * @param {Baggage} baggage that will be set in the actual context
- */
-function setBaggage(context, baggage) {
-  return context.setValue(BAGGAGE_KEY, baggage);
-}
-/**
- * Delete the baggage stored in the given context
- *
- * @param {Context} Context that manage all context values
- */
-function deleteBaggage(context) {
-  return context.deleteValue(BAGGAGE_KEY);
-}
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var API_NAME = 'propagation';
-var NOOP_TEXT_MAP_PROPAGATOR = new NoopTextMapPropagator();
-/**
- * Singleton object which represents the entry point to the OpenTelemetry Propagation API
- */
-var PropagationAPI = /** @class */ (function () {
-  /** Empty private constructor prevents end users from constructing a new instance of the API */
-  function PropagationAPI() {
-    this.createBaggage = createBaggage;
-    this.getBaggage = getBaggage;
-    this.setBaggage = setBaggage;
-    this.deleteBaggage = deleteBaggage;
-  }
-  /** Get the singleton instance of the Propagator API */
-  PropagationAPI.getInstance = function () {
-    if (!this._instance) {
-      this._instance = new PropagationAPI();
-    }
-    return this._instance;
-  };
-  /**
-   * Set the current propagator.
-   *
-   * @returns true if the propagator was successfully registered, else false
-   */
-  PropagationAPI.prototype.setGlobalPropagator = function (propagator) {
-    return registerGlobal(API_NAME, propagator, DiagAPI.instance());
-  };
-  /**
-   * Inject context into a carrier to be propagated inter-process
-   *
-   * @param context Context carrying tracing data to inject
-   * @param carrier carrier to inject context into
-   * @param setter Function used to set values on the carrier
-   */
-  PropagationAPI.prototype.inject = function (context, carrier, setter) {
-    if (setter === void 0) { setter = defaultTextMapSetter; }
-    return this._getGlobalPropagator().inject(context, carrier, setter);
-  };
-  /**
-   * Extract context from a carrier
-   *
-   * @param context Context which the newly created context will inherit from
-   * @param carrier Carrier to extract context from
-   * @param getter Function used to extract keys from a carrier
-   */
-  PropagationAPI.prototype.extract = function (context, carrier, getter) {
-    if (getter === void 0) { getter = defaultTextMapGetter; }
-    return this._getGlobalPropagator().extract(context, carrier, getter);
-  };
-  /**
-   * Return a list of all fields which may be used by the propagator.
-   */
-  PropagationAPI.prototype.fields = function () {
-    return this._getGlobalPropagator().fields();
-  };
-  /** Remove the global propagator */
-  PropagationAPI.prototype.disable = function () {
-    unregisterGlobal(API_NAME, DiagAPI.instance());
-  };
-  PropagationAPI.prototype._getGlobalPropagator = function () {
-    return getGlobal(API_NAME) || NOOP_TEXT_MAP_PROPAGATOR;
-  };
-  return PropagationAPI;
-}());
-
-/*
- * Copyright The OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** Entrypoint for context API */
-var context$1 = ContextAPI.getInstance();
 /** Entrypoint for trace API */
 var trace = TraceAPI.getInstance();
-/** Entrypoint for propagation API */
-PropagationAPI.getInstance();
-/**
- * Entrypoint for Diag API.
- * Defines Diagnostic handler used for internal diagnostic logging operations.
- * The default provides a Noop DiagLogger implementation which may be changed via the
- * diag.setLogger(logger: DiagLogger) function.
- */
-DiagAPI.instance();
 
 // Copyright (c) Microsoft Corporation.
 /**
@@ -138005,185 +137997,185 @@ const BlockBlobGetBlockListExceptionHeaders = {
 
 const Mappers = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
 	__proto__: null,
-	BlobServiceProperties,
-	Logging,
-	RetentionPolicy,
-	Metrics,
-	CorsRule,
-	StaticWebsite,
-	StorageError,
-	BlobServiceStatistics,
-	GeoReplication,
-	ListContainersSegmentResponse,
-	ContainerItem,
-	ContainerProperties,
-	KeyInfo,
-	UserDelegationKey,
-	FilterBlobSegment,
-	FilterBlobItem,
-	BlobTags,
-	BlobTag,
-	SignedIdentifier,
 	AccessPolicy,
-	ListBlobsFlatSegmentResponse,
-	BlobFlatListSegment,
-	BlobItemInternal,
-	BlobName,
-	BlobPropertiesInternal,
-	ListBlobsHierarchySegmentResponse,
-	BlobHierarchyListSegment,
-	BlobPrefix,
-	BlockLookupList,
-	BlockList,
-	Block,
-	PageList,
-	PageRange,
-	ClearRange,
-	QueryRequest,
-	QuerySerialization,
-	QueryFormat,
-	DelimitedTextConfiguration,
-	JsonTextConfiguration,
+	AppendBlobAppendBlockExceptionHeaders,
+	AppendBlobAppendBlockFromUrlExceptionHeaders,
+	AppendBlobAppendBlockFromUrlHeaders,
+	AppendBlobAppendBlockHeaders,
+	AppendBlobCreateExceptionHeaders,
+	AppendBlobCreateHeaders,
+	AppendBlobSealExceptionHeaders,
+	AppendBlobSealHeaders,
 	ArrowConfiguration,
 	ArrowField,
-	ServiceSetPropertiesHeaders,
-	ServiceSetPropertiesExceptionHeaders,
-	ServiceGetPropertiesHeaders,
-	ServiceGetPropertiesExceptionHeaders,
-	ServiceGetStatisticsHeaders,
-	ServiceGetStatisticsExceptionHeaders,
-	ServiceListContainersSegmentHeaders,
-	ServiceListContainersSegmentExceptionHeaders,
-	ServiceGetUserDelegationKeyHeaders,
-	ServiceGetUserDelegationKeyExceptionHeaders,
-	ServiceGetAccountInfoHeaders,
-	ServiceGetAccountInfoExceptionHeaders,
-	ServiceSubmitBatchHeaders,
-	ServiceSubmitBatchExceptionHeaders,
-	ServiceFilterBlobsHeaders,
-	ServiceFilterBlobsExceptionHeaders,
-	ContainerCreateHeaders,
-	ContainerCreateExceptionHeaders,
-	ContainerGetPropertiesHeaders,
-	ContainerGetPropertiesExceptionHeaders,
-	ContainerDeleteHeaders,
-	ContainerDeleteExceptionHeaders,
-	ContainerSetMetadataHeaders,
-	ContainerSetMetadataExceptionHeaders,
-	ContainerGetAccessPolicyHeaders,
-	ContainerGetAccessPolicyExceptionHeaders,
-	ContainerSetAccessPolicyHeaders,
-	ContainerSetAccessPolicyExceptionHeaders,
-	ContainerRestoreHeaders,
-	ContainerRestoreExceptionHeaders,
-	ContainerRenameHeaders,
-	ContainerRenameExceptionHeaders,
-	ContainerSubmitBatchHeaders,
-	ContainerSubmitBatchExceptionHeaders,
-	ContainerFilterBlobsHeaders,
-	ContainerFilterBlobsExceptionHeaders,
-	ContainerAcquireLeaseHeaders,
-	ContainerAcquireLeaseExceptionHeaders,
-	ContainerReleaseLeaseHeaders,
-	ContainerReleaseLeaseExceptionHeaders,
-	ContainerRenewLeaseHeaders,
-	ContainerRenewLeaseExceptionHeaders,
-	ContainerBreakLeaseHeaders,
-	ContainerBreakLeaseExceptionHeaders,
-	ContainerChangeLeaseHeaders,
-	ContainerChangeLeaseExceptionHeaders,
-	ContainerListBlobFlatSegmentHeaders,
-	ContainerListBlobFlatSegmentExceptionHeaders,
-	ContainerListBlobHierarchySegmentHeaders,
-	ContainerListBlobHierarchySegmentExceptionHeaders,
-	ContainerGetAccountInfoHeaders,
-	ContainerGetAccountInfoExceptionHeaders,
-	BlobDownloadHeaders,
-	BlobDownloadExceptionHeaders,
-	BlobGetPropertiesHeaders,
-	BlobGetPropertiesExceptionHeaders,
-	BlobDeleteHeaders,
-	BlobDeleteExceptionHeaders,
-	BlobUndeleteHeaders,
-	BlobUndeleteExceptionHeaders,
-	BlobSetExpiryHeaders,
-	BlobSetExpiryExceptionHeaders,
-	BlobSetHttpHeadersHeaders,
-	BlobSetHttpHeadersExceptionHeaders,
-	BlobSetImmutabilityPolicyHeaders,
-	BlobSetImmutabilityPolicyExceptionHeaders,
-	BlobDeleteImmutabilityPolicyHeaders,
-	BlobDeleteImmutabilityPolicyExceptionHeaders,
-	BlobSetLegalHoldHeaders,
-	BlobSetLegalHoldExceptionHeaders,
-	BlobSetMetadataHeaders,
-	BlobSetMetadataExceptionHeaders,
-	BlobAcquireLeaseHeaders,
-	BlobAcquireLeaseExceptionHeaders,
-	BlobReleaseLeaseHeaders,
-	BlobReleaseLeaseExceptionHeaders,
-	BlobRenewLeaseHeaders,
-	BlobRenewLeaseExceptionHeaders,
-	BlobChangeLeaseHeaders,
-	BlobChangeLeaseExceptionHeaders,
-	BlobBreakLeaseHeaders,
-	BlobBreakLeaseExceptionHeaders,
-	BlobCreateSnapshotHeaders,
-	BlobCreateSnapshotExceptionHeaders,
-	BlobStartCopyFromURLHeaders,
-	BlobStartCopyFromURLExceptionHeaders,
-	BlobCopyFromURLHeaders,
-	BlobCopyFromURLExceptionHeaders,
-	BlobAbortCopyFromURLHeaders,
 	BlobAbortCopyFromURLExceptionHeaders,
-	BlobSetTierHeaders,
-	BlobSetTierExceptionHeaders,
-	BlobGetAccountInfoHeaders,
+	BlobAbortCopyFromURLHeaders,
+	BlobAcquireLeaseExceptionHeaders,
+	BlobAcquireLeaseHeaders,
+	BlobBreakLeaseExceptionHeaders,
+	BlobBreakLeaseHeaders,
+	BlobChangeLeaseExceptionHeaders,
+	BlobChangeLeaseHeaders,
+	BlobCopyFromURLExceptionHeaders,
+	BlobCopyFromURLHeaders,
+	BlobCreateSnapshotExceptionHeaders,
+	BlobCreateSnapshotHeaders,
+	BlobDeleteExceptionHeaders,
+	BlobDeleteHeaders,
+	BlobDeleteImmutabilityPolicyExceptionHeaders,
+	BlobDeleteImmutabilityPolicyHeaders,
+	BlobDownloadExceptionHeaders,
+	BlobDownloadHeaders,
+	BlobFlatListSegment,
 	BlobGetAccountInfoExceptionHeaders,
-	BlobQueryHeaders,
-	BlobQueryExceptionHeaders,
-	BlobGetTagsHeaders,
+	BlobGetAccountInfoHeaders,
+	BlobGetPropertiesExceptionHeaders,
+	BlobGetPropertiesHeaders,
 	BlobGetTagsExceptionHeaders,
-	BlobSetTagsHeaders,
+	BlobGetTagsHeaders,
+	BlobHierarchyListSegment,
+	BlobItemInternal,
+	BlobName,
+	BlobPrefix,
+	BlobPropertiesInternal,
+	BlobQueryExceptionHeaders,
+	BlobQueryHeaders,
+	BlobReleaseLeaseExceptionHeaders,
+	BlobReleaseLeaseHeaders,
+	BlobRenewLeaseExceptionHeaders,
+	BlobRenewLeaseHeaders,
+	BlobServiceProperties,
+	BlobServiceStatistics,
+	BlobSetExpiryExceptionHeaders,
+	BlobSetExpiryHeaders,
+	BlobSetHttpHeadersExceptionHeaders,
+	BlobSetHttpHeadersHeaders,
+	BlobSetImmutabilityPolicyExceptionHeaders,
+	BlobSetImmutabilityPolicyHeaders,
+	BlobSetLegalHoldExceptionHeaders,
+	BlobSetLegalHoldHeaders,
+	BlobSetMetadataExceptionHeaders,
+	BlobSetMetadataHeaders,
 	BlobSetTagsExceptionHeaders,
-	PageBlobCreateHeaders,
-	PageBlobCreateExceptionHeaders,
-	PageBlobUploadPagesHeaders,
-	PageBlobUploadPagesExceptionHeaders,
-	PageBlobClearPagesHeaders,
-	PageBlobClearPagesExceptionHeaders,
-	PageBlobUploadPagesFromURLHeaders,
-	PageBlobUploadPagesFromURLExceptionHeaders,
-	PageBlobGetPageRangesHeaders,
-	PageBlobGetPageRangesExceptionHeaders,
-	PageBlobGetPageRangesDiffHeaders,
-	PageBlobGetPageRangesDiffExceptionHeaders,
-	PageBlobResizeHeaders,
-	PageBlobResizeExceptionHeaders,
-	PageBlobUpdateSequenceNumberHeaders,
-	PageBlobUpdateSequenceNumberExceptionHeaders,
-	PageBlobCopyIncrementalHeaders,
-	PageBlobCopyIncrementalExceptionHeaders,
-	AppendBlobCreateHeaders,
-	AppendBlobCreateExceptionHeaders,
-	AppendBlobAppendBlockHeaders,
-	AppendBlobAppendBlockExceptionHeaders,
-	AppendBlobAppendBlockFromUrlHeaders,
-	AppendBlobAppendBlockFromUrlExceptionHeaders,
-	AppendBlobSealHeaders,
-	AppendBlobSealExceptionHeaders,
-	BlockBlobUploadHeaders,
-	BlockBlobUploadExceptionHeaders,
-	BlockBlobPutBlobFromUrlHeaders,
-	BlockBlobPutBlobFromUrlExceptionHeaders,
-	BlockBlobStageBlockHeaders,
-	BlockBlobStageBlockExceptionHeaders,
-	BlockBlobStageBlockFromURLHeaders,
-	BlockBlobStageBlockFromURLExceptionHeaders,
-	BlockBlobCommitBlockListHeaders,
+	BlobSetTagsHeaders,
+	BlobSetTierExceptionHeaders,
+	BlobSetTierHeaders,
+	BlobStartCopyFromURLExceptionHeaders,
+	BlobStartCopyFromURLHeaders,
+	BlobTag,
+	BlobTags,
+	BlobUndeleteExceptionHeaders,
+	BlobUndeleteHeaders,
+	Block,
 	BlockBlobCommitBlockListExceptionHeaders,
+	BlockBlobCommitBlockListHeaders,
+	BlockBlobGetBlockListExceptionHeaders,
 	BlockBlobGetBlockListHeaders,
-	BlockBlobGetBlockListExceptionHeaders
+	BlockBlobPutBlobFromUrlExceptionHeaders,
+	BlockBlobPutBlobFromUrlHeaders,
+	BlockBlobStageBlockExceptionHeaders,
+	BlockBlobStageBlockFromURLExceptionHeaders,
+	BlockBlobStageBlockFromURLHeaders,
+	BlockBlobStageBlockHeaders,
+	BlockBlobUploadExceptionHeaders,
+	BlockBlobUploadHeaders,
+	BlockList,
+	BlockLookupList,
+	ClearRange,
+	ContainerAcquireLeaseExceptionHeaders,
+	ContainerAcquireLeaseHeaders,
+	ContainerBreakLeaseExceptionHeaders,
+	ContainerBreakLeaseHeaders,
+	ContainerChangeLeaseExceptionHeaders,
+	ContainerChangeLeaseHeaders,
+	ContainerCreateExceptionHeaders,
+	ContainerCreateHeaders,
+	ContainerDeleteExceptionHeaders,
+	ContainerDeleteHeaders,
+	ContainerFilterBlobsExceptionHeaders,
+	ContainerFilterBlobsHeaders,
+	ContainerGetAccessPolicyExceptionHeaders,
+	ContainerGetAccessPolicyHeaders,
+	ContainerGetAccountInfoExceptionHeaders,
+	ContainerGetAccountInfoHeaders,
+	ContainerGetPropertiesExceptionHeaders,
+	ContainerGetPropertiesHeaders,
+	ContainerItem,
+	ContainerListBlobFlatSegmentExceptionHeaders,
+	ContainerListBlobFlatSegmentHeaders,
+	ContainerListBlobHierarchySegmentExceptionHeaders,
+	ContainerListBlobHierarchySegmentHeaders,
+	ContainerProperties,
+	ContainerReleaseLeaseExceptionHeaders,
+	ContainerReleaseLeaseHeaders,
+	ContainerRenameExceptionHeaders,
+	ContainerRenameHeaders,
+	ContainerRenewLeaseExceptionHeaders,
+	ContainerRenewLeaseHeaders,
+	ContainerRestoreExceptionHeaders,
+	ContainerRestoreHeaders,
+	ContainerSetAccessPolicyExceptionHeaders,
+	ContainerSetAccessPolicyHeaders,
+	ContainerSetMetadataExceptionHeaders,
+	ContainerSetMetadataHeaders,
+	ContainerSubmitBatchExceptionHeaders,
+	ContainerSubmitBatchHeaders,
+	CorsRule,
+	DelimitedTextConfiguration,
+	FilterBlobItem,
+	FilterBlobSegment,
+	GeoReplication,
+	JsonTextConfiguration,
+	KeyInfo,
+	ListBlobsFlatSegmentResponse,
+	ListBlobsHierarchySegmentResponse,
+	ListContainersSegmentResponse,
+	Logging,
+	Metrics,
+	PageBlobClearPagesExceptionHeaders,
+	PageBlobClearPagesHeaders,
+	PageBlobCopyIncrementalExceptionHeaders,
+	PageBlobCopyIncrementalHeaders,
+	PageBlobCreateExceptionHeaders,
+	PageBlobCreateHeaders,
+	PageBlobGetPageRangesDiffExceptionHeaders,
+	PageBlobGetPageRangesDiffHeaders,
+	PageBlobGetPageRangesExceptionHeaders,
+	PageBlobGetPageRangesHeaders,
+	PageBlobResizeExceptionHeaders,
+	PageBlobResizeHeaders,
+	PageBlobUpdateSequenceNumberExceptionHeaders,
+	PageBlobUpdateSequenceNumberHeaders,
+	PageBlobUploadPagesExceptionHeaders,
+	PageBlobUploadPagesFromURLExceptionHeaders,
+	PageBlobUploadPagesFromURLHeaders,
+	PageBlobUploadPagesHeaders,
+	PageList,
+	PageRange,
+	QueryFormat,
+	QueryRequest,
+	QuerySerialization,
+	RetentionPolicy,
+	ServiceFilterBlobsExceptionHeaders,
+	ServiceFilterBlobsHeaders,
+	ServiceGetAccountInfoExceptionHeaders,
+	ServiceGetAccountInfoHeaders,
+	ServiceGetPropertiesExceptionHeaders,
+	ServiceGetPropertiesHeaders,
+	ServiceGetStatisticsExceptionHeaders,
+	ServiceGetStatisticsHeaders,
+	ServiceGetUserDelegationKeyExceptionHeaders,
+	ServiceGetUserDelegationKeyHeaders,
+	ServiceListContainersSegmentExceptionHeaders,
+	ServiceListContainersSegmentHeaders,
+	ServiceSetPropertiesExceptionHeaders,
+	ServiceSetPropertiesHeaders,
+	ServiceSubmitBatchExceptionHeaders,
+	ServiceSubmitBatchHeaders,
+	SignedIdentifier,
+	StaticWebsite,
+	StorageError,
+	UserDelegationKey
 }, Symbol.toStringTag, { value: 'Module' }));
 
 /*
@@ -149061,7 +149053,7 @@ class Batch {
       throw new RangeError("concurrency must be larger than 0");
     }
     this.concurrency = concurrency;
-    this.emitter = new events$2.exports.EventEmitter();
+    this.emitter = new eventsExports.EventEmitter();
   }
   /**
    * Add a operation into queue.
@@ -149340,7 +149332,7 @@ class BufferScheduler {
     /**
      * An internal event emitter.
      */
-    this.emitter = new events$2.exports.EventEmitter();
+    this.emitter = new eventsExports.EventEmitter();
     /**
      * An internal offset marker to track data offset in bytes of next outgoingHandler.
      */
@@ -155502,49 +155494,49 @@ class BlobServiceClient extends StorageClient {
 
 const src = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
 	__proto__: null,
-	RestError,
-	get BlockBlobTier () { return BlockBlobTier; },
-	get PremiumPageBlobTier () { return PremiumPageBlobTier; },
-	get StorageBlobAudience () { return StorageBlobAudience; },
-	logger,
-	BlobServiceClient,
-	BlobClient,
-	AppendBlobClient,
-	BlockBlobClient,
-	PageBlobClient,
-	ContainerClient,
-	BlobLeaseClient,
 	AccountSASPermissions,
 	AccountSASResourceTypes,
 	AccountSASServices,
-	generateAccountSASQueryParameters,
+	AnonymousCredential,
+	AnonymousCredentialPolicy,
+	AppendBlobClient,
+	BaseRequestPolicy,
 	BlobBatch,
 	BlobBatchClient,
+	BlobClient,
+	BlobLeaseClient,
 	BlobSASPermissions,
-	generateBlobSASQueryParameters,
+	BlobServiceClient,
+	BlockBlobClient,
+	get BlockBlobTier () { return BlockBlobTier; },
+	ContainerClient,
+	ContainerSASPermissions,
+	Credential,
+	CredentialPolicy,
+	HttpHeaders,
+	PageBlobClient,
+	Pipeline,
+	get PremiumPageBlobTier () { return PremiumPageBlobTier; },
+	RequestPolicyOptions,
+	RestError,
+	get SASProtocol () { return SASProtocol; },
+	SASQueryParameters,
+	get StorageBlobAudience () { return StorageBlobAudience; },
 	StorageBrowserPolicy,
 	StorageBrowserPolicyFactory,
-	ContainerSASPermissions,
-	AnonymousCredential,
-	Credential,
-	StorageSharedKeyCredential,
-	BaseRequestPolicy,
 	StorageOAuthScopes,
-	deserializationPolicy,
-	HttpHeaders,
-	WebResource,
-	RequestPolicyOptions,
-	isPipelineLike,
-	Pipeline,
-	newPipeline,
-	AnonymousCredentialPolicy,
-	CredentialPolicy,
-	get StorageRetryPolicyType () { return StorageRetryPolicyType; },
 	StorageRetryPolicy,
 	StorageRetryPolicyFactory,
+	get StorageRetryPolicyType () { return StorageRetryPolicyType; },
+	StorageSharedKeyCredential,
 	StorageSharedKeyCredentialPolicy,
-	get SASProtocol () { return SASProtocol; },
-	SASQueryParameters
+	WebResource,
+	deserializationPolicy,
+	generateAccountSASQueryParameters,
+	generateBlobSASQueryParameters,
+	isPipelineLike,
+	logger,
+	newPipeline
 }, Symbol.toStringTag, { value: 'Module' }));
 
 const require$$2 = /*@__PURE__*/getAugmentedNamespace(src);
@@ -155570,7 +155562,7 @@ var __importStar$5 = (commonjsGlobal && commonjsGlobal.__importStar) || function
 Object.defineProperty(requestUtils, "__esModule", { value: true });
 const core$4 = __importStar$5(requireCore());
 const http_client_1$2 = lib$2;
-const constants_1$3 = constants;
+const constants_1$2 = constants;
 function isSuccessStatusCode(statusCode) {
   if (!statusCode) {
     return false;
@@ -155602,7 +155594,7 @@ function sleep(milliseconds) {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
   });
 }
-function retry(name, method, getStatusCode, maxAttempts = constants_1$3.DefaultRetryAttempts, delay = constants_1$3.DefaultRetryDelay, onError = undefined) {
+function retry(name, method, getStatusCode, maxAttempts = constants_1$2.DefaultRetryAttempts, delay = constants_1$2.DefaultRetryDelay, onError = undefined) {
   return __awaiter$4(this, void 0, void 0, function* () {
     let errorMessage = '';
     let attempt = 1;
@@ -155642,7 +155634,7 @@ function retry(name, method, getStatusCode, maxAttempts = constants_1$3.DefaultR
   });
 }
 requestUtils.retry = retry;
-function retryTypedResponse(name, method, maxAttempts = constants_1$3.DefaultRetryAttempts, delay = constants_1$3.DefaultRetryDelay) {
+function retryTypedResponse(name, method, maxAttempts = constants_1$2.DefaultRetryAttempts, delay = constants_1$2.DefaultRetryDelay) {
   return __awaiter$4(this, void 0, void 0, function* () {
     return yield retry(name, method, (response) => response.statusCode, maxAttempts, delay, 
     // If the error object contains the statusCode property, extract it and return
@@ -155663,7 +155655,7 @@ function retryTypedResponse(name, method, maxAttempts = constants_1$3.DefaultRet
   });
 }
 requestUtils.retryTypedResponse = retryTypedResponse;
-function retryHttpClientResponse(name, method, maxAttempts = constants_1$3.DefaultRetryAttempts, delay = constants_1$3.DefaultRetryDelay) {
+function retryHttpClientResponse(name, method, maxAttempts = constants_1$2.DefaultRetryAttempts, delay = constants_1$2.DefaultRetryDelay) {
   return __awaiter$4(this, void 0, void 0, function* () {
     return yield retry(name, method, (response) => response.message.statusCode, maxAttempts, delay);
   });
@@ -155697,7 +155689,7 @@ const fs$1 = __importStar$4(fs$6);
 const stream = __importStar$4(Stream$3);
 const util = __importStar$4(require$$1$2);
 const utils$3 = __importStar$4(cacheUtils);
-const constants_1$2 = constants;
+const constants_1$1 = constants;
 const requestUtils_1$1 = requestUtils;
 const abort_controller_1 = require$$10;
 /**
@@ -155825,9 +155817,9 @@ function downloadCacheHttpClient(archiveLocation, archivePath) {
     const httpClient = new http_client_1$1.HttpClient('actions/cache');
     const downloadResponse = yield requestUtils_1$1.retryHttpClientResponse('downloadCache', () => __awaiter$3(this, void 0, void 0, function* () { return httpClient.get(archiveLocation); }));
     // Abort download if no traffic received over the socket.
-    downloadResponse.message.socket.setTimeout(constants_1$2.SocketTimeout, () => {
+    downloadResponse.message.socket.setTimeout(constants_1$1.SocketTimeout, () => {
       downloadResponse.message.destroy();
-      core$3.debug(`Aborting download, socket timed out after ${constants_1$2.SocketTimeout} ms`);
+      core$3.debug(`Aborting download, socket timed out after ${constants_1$1.SocketTimeout} ms`);
     });
     yield pipeResponseToStream(downloadResponse, writeStream);
     // Validate download size.
@@ -156021,7 +156013,6 @@ const crypto = __importStar$2(require$$0$1);
 const fs = __importStar$2(fs$6);
 const url_1 = Url$1;
 const utils$2 = __importStar$2(cacheUtils);
-const constants_1$1 = constants;
 const downloadUtils_1 = downloadUtils;
 const options_1 = options;
 const requestUtils_1 = requestUtils;
@@ -156051,10 +156042,17 @@ function createHttpClient() {
   const bearerCredentialHandler = new auth_1.BearerCredentialHandler(token);
   return new http_client_1.HttpClient('actions/cache', [bearerCredentialHandler], getRequestOptions());
 }
-function getCacheVersion(paths, compressionMethod) {
-  const components = paths.concat(!compressionMethod || compressionMethod === constants_1$1.CompressionMethod.Gzip
-    ? []
-    : [compressionMethod]);
+function getCacheVersion(paths, compressionMethod, enableCrossOsArchive = false) {
+  const components = paths;
+  // Add compression method to cache version to restore
+  // compressed cache as per compression method
+  if (compressionMethod) {
+    components.push(compressionMethod);
+  }
+  // Only check for windows platforms if enableCrossOsArchive is false
+  if (process.platform === 'win32' && !enableCrossOsArchive) {
+    components.push('windows-only');
+  }
   // Add salt to cache version to support breaking changes in cache entry
   components.push(versionSalt);
   return crypto
@@ -156066,10 +156064,15 @@ cacheHttpClient$1.getCacheVersion = getCacheVersion;
 function getCacheEntry(keys, paths, options) {
   return __awaiter$2(this, void 0, void 0, function* () {
     const httpClient = createHttpClient();
-    const version = getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod);
+    const version = getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod, options === null || options === void 0 ? void 0 : options.enableCrossOsArchive);
     const resource = `cache?keys=${encodeURIComponent(keys.join(','))}&version=${version}`;
     const response = yield requestUtils_1.retryTypedResponse('getCacheEntry', () => __awaiter$2(this, void 0, void 0, function* () { return httpClient.getJson(getCacheApiUrl(resource)); }));
+    // Cache not found
     if (response.statusCode === 204) {
+      // List cache for primary key only if cache miss occurs
+      if (core$1.isDebug()) {
+        yield printCachesListForDiagnostics(keys[0], httpClient, version);
+      }
       return null;
     }
     if (!requestUtils_1.isSuccessStatusCode(response.statusCode)) {
@@ -156078,6 +156081,7 @@ function getCacheEntry(keys, paths, options) {
     const cacheResult = response.result;
     const cacheDownloadUrl = cacheResult === null || cacheResult === void 0 ? void 0 : cacheResult.archiveLocation;
     if (!cacheDownloadUrl) {
+      // Cache achiveLocation not found. This should never happen, and hence bail out.
       throw new Error('Cache not found.');
     }
     core$1.setSecret(cacheDownloadUrl);
@@ -156087,6 +156091,22 @@ function getCacheEntry(keys, paths, options) {
   });
 }
 cacheHttpClient$1.getCacheEntry = getCacheEntry;
+function printCachesListForDiagnostics(key, httpClient, version) {
+  return __awaiter$2(this, void 0, void 0, function* () {
+    const resource = `caches?key=${encodeURIComponent(key)}`;
+    const response = yield requestUtils_1.retryTypedResponse('listCache', () => __awaiter$2(this, void 0, void 0, function* () { return httpClient.getJson(getCacheApiUrl(resource)); }));
+    if (response.statusCode === 200) {
+      const cacheListResult = response.result;
+      const totalCount = cacheListResult === null || cacheListResult === void 0 ? void 0 : cacheListResult.totalCount;
+      if (totalCount && totalCount > 0) {
+        core$1.debug(`No matching cache found for cache key '${key}', version '${version} and scope ${process.env['GITHUB_REF']}. There exist one or more cache(s) with similar key but they have different version or scope. See more info on cache matching here: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key \nOther caches with similar key:`);
+        for (const cacheEntry of (cacheListResult === null || cacheListResult === void 0 ? void 0 : cacheListResult.artifactCaches) || []) {
+          core$1.debug(`Cache Key: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.cacheKey}, Cache Version: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.cacheVersion}, Cache Scope: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.scope}, Cache Created: ${cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.creationTime}`);
+        }
+      }
+    }
+  });
+}
 function downloadCache(archiveLocation, archivePath, options) {
   return __awaiter$2(this, void 0, void 0, function* () {
     const archiveUrl = new url_1.URL(archiveLocation);
@@ -156107,7 +156127,7 @@ cacheHttpClient$1.downloadCache = downloadCache;
 function reserveCache(key, paths, options) {
   return __awaiter$2(this, void 0, void 0, function* () {
     const httpClient = createHttpClient();
-    const version = getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod);
+    const version = getCacheVersion(paths, options === null || options === void 0 ? void 0 : options.compressionMethod, options === null || options === void 0 ? void 0 : options.enableCrossOsArchive);
     const reserveCacheRequest = {
       key,
       version,
@@ -156235,21 +156255,19 @@ const path$1 = __importStar$1(require$$1$4);
 const utils$1 = __importStar$1(cacheUtils);
 const constants_1 = constants;
 const IS_WINDOWS = process.platform === 'win32';
-function getTarPath(args, compressionMethod) {
+// Returns tar path and type: BSD or GNU
+function getTarPath() {
   return __awaiter$1(this, void 0, void 0, function* () {
     switch (process.platform) {
       case 'win32': {
-        const systemTar = `${process.env['windir']}\\System32\\tar.exe`;
-        if (compressionMethod !== constants_1.CompressionMethod.Gzip) {
-          // We only use zstandard compression on windows when gnu tar is installed due to
-          // a bug with compressing large files with bsdtar + zstd
-          args.push('--force-local');
+        const gnuTar = yield utils$1.getGnuTarPathOnWindows();
+        const systemTar = constants_1.SystemTarPathOnWindows;
+        if (gnuTar) {
+          // Use GNUtar as default on windows
+          return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
         }
         else if (fs_1.existsSync(systemTar)) {
-          return systemTar;
-        }
-        else if (yield utils$1.isGnuTarInstalled()) {
-          args.push('--force-local');
+          return { path: systemTar, type: constants_1.ArchiveToolType.BSD };
         }
         break;
       }
@@ -156257,23 +156275,90 @@ function getTarPath(args, compressionMethod) {
         const gnuTar = yield io.which('gtar', false);
         if (gnuTar) {
           // fix permission denied errors when extracting BSD tar archive with GNU tar - https://github.com/actions/cache/issues/527
-          args.push('--delay-directory-restore');
-          return gnuTar;
+          return { path: gnuTar, type: constants_1.ArchiveToolType.GNU };
         }
-        break;
+        else {
+          return {
+            path: yield io.which('tar', true),
+            type: constants_1.ArchiveToolType.BSD
+          };
+        }
       }
     }
-    return yield io.which('tar', true);
+    // Default assumption is GNU tar is present in path
+    return {
+      path: yield io.which('tar', true),
+      type: constants_1.ArchiveToolType.GNU
+    };
   });
 }
-function execTar(args, compressionMethod, cwd) {
+// Return arguments for tar as per tarPath, compressionMethod, method type and os
+function getTarArgs(tarPath, compressionMethod, type, archivePath = '') {
   return __awaiter$1(this, void 0, void 0, function* () {
-    try {
-      yield exec_1.exec(`"${yield getTarPath(args, compressionMethod)}"`, args, { cwd });
+    const args = [`"${tarPath.path}"`];
+    const cacheFileName = utils$1.getCacheFileName(compressionMethod);
+    const tarFile = 'cache.tar';
+    const workingDirectory = getWorkingDirectory();
+    // Speficic args for BSD tar on windows for workaround
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+      compressionMethod !== constants_1.CompressionMethod.Gzip &&
+      IS_WINDOWS;
+    // Method specific args
+    switch (type) {
+      case 'create':
+        args.push('--posix', '-cf', BSD_TAR_ZSTD
+          ? tarFile
+          : cacheFileName.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'), '--exclude', BSD_TAR_ZSTD
+          ? tarFile
+          : cacheFileName.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'), '--files-from', constants_1.ManifestFilename);
+        break;
+      case 'extract':
+        args.push('-xf', BSD_TAR_ZSTD
+          ? tarFile
+          : archivePath.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'), '-P', '-C', workingDirectory.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'));
+        break;
+      case 'list':
+        args.push('-tf', BSD_TAR_ZSTD
+          ? tarFile
+          : archivePath.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'), '-P');
+        break;
     }
-    catch (error) {
-      throw new Error(`Tar failed with error: ${error === null || error === void 0 ? void 0 : error.message}`);
+    // Platform specific args
+    if (tarPath.type === constants_1.ArchiveToolType.GNU) {
+      switch (process.platform) {
+        case 'win32':
+          args.push('--force-local');
+          break;
+        case 'darwin':
+          args.push('--delay-directory-restore');
+          break;
+      }
     }
+    return args;
+  });
+}
+// Returns commands to run tar and compression program
+function getCommands(compressionMethod, type, archivePath = '') {
+  return __awaiter$1(this, void 0, void 0, function* () {
+    let args;
+    const tarPath = yield getTarPath();
+    const tarArgs = yield getTarArgs(tarPath, compressionMethod, type, archivePath);
+    const compressionArgs = type !== 'create'
+      ? yield getDecompressionProgram(tarPath, compressionMethod, archivePath)
+      : yield getCompressionProgram(tarPath, compressionMethod);
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+      compressionMethod !== constants_1.CompressionMethod.Gzip &&
+      IS_WINDOWS;
+    if (BSD_TAR_ZSTD && type !== 'create') {
+      args = [[...compressionArgs].join(' '), [...tarArgs].join(' ')];
+    }
+    else {
+      args = [[...tarArgs].join(' '), [...compressionArgs].join(' ')];
+    }
+    if (BSD_TAR_ZSTD) {
+      return args;
+    }
+    return [args.join(' ')];
   });
 }
 function getWorkingDirectory() {
@@ -156281,91 +156366,119 @@ function getWorkingDirectory() {
   return (_a = process.env['GITHUB_WORKSPACE']) !== null && _a !== void 0 ? _a : process.cwd();
 }
 // Common function for extractTar and listTar to get the compression method
-function getCompressionProgram(compressionMethod) {
-  // -d: Decompress.
-  // unzstd is equivalent to 'zstd -d'
-  // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
-  // Using 30 here because we also support 32-bit self-hosted runners.
-  switch (compressionMethod) {
-    case constants_1.CompressionMethod.Zstd:
-      return [
-        '--use-compress-program',
-        IS_WINDOWS ? 'zstd -d --long=30' : 'unzstd --long=30'
-      ];
-    case constants_1.CompressionMethod.ZstdWithoutLong:
-      return ['--use-compress-program', IS_WINDOWS ? 'zstd -d' : 'unzstd'];
-    default:
-      return ['-z'];
-  }
+function getDecompressionProgram(tarPath, compressionMethod, archivePath) {
+  return __awaiter$1(this, void 0, void 0, function* () {
+    // -d: Decompress.
+    // unzstd is equivalent to 'zstd -d'
+    // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
+    // Using 30 here because we also support 32-bit self-hosted runners.
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+      compressionMethod !== constants_1.CompressionMethod.Gzip &&
+      IS_WINDOWS;
+    switch (compressionMethod) {
+      case constants_1.CompressionMethod.Zstd:
+        return BSD_TAR_ZSTD
+          ? [
+            'zstd -d --long=30 --force -o',
+            constants_1.TarFilename,
+            archivePath.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/')
+          ]
+          : [
+            '--use-compress-program',
+            IS_WINDOWS ? '"zstd -d --long=30"' : 'unzstd --long=30'
+          ];
+      case constants_1.CompressionMethod.ZstdWithoutLong:
+        return BSD_TAR_ZSTD
+          ? [
+            'zstd -d --force -o',
+            constants_1.TarFilename,
+            archivePath.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/')
+          ]
+          : ['--use-compress-program', IS_WINDOWS ? '"zstd -d"' : 'unzstd'];
+      default:
+        return ['-z'];
+    }
+  });
 }
+// Used for creating the archive
+// -T#: Compress using # working thread. If # is 0, attempt to detect and use the number of physical CPU cores.
+// zstdmt is equivalent to 'zstd -T0'
+// --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
+// Using 30 here because we also support 32-bit self-hosted runners.
+// Long range mode is added to zstd in v1.3.2 release, so we will not use --long in older version of zstd.
+function getCompressionProgram(tarPath, compressionMethod) {
+  return __awaiter$1(this, void 0, void 0, function* () {
+    const cacheFileName = utils$1.getCacheFileName(compressionMethod);
+    const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD &&
+      compressionMethod !== constants_1.CompressionMethod.Gzip &&
+      IS_WINDOWS;
+    switch (compressionMethod) {
+      case constants_1.CompressionMethod.Zstd:
+        return BSD_TAR_ZSTD
+          ? [
+            'zstd -T0 --long=30 --force -o',
+            cacheFileName.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
+            constants_1.TarFilename
+          ]
+          : [
+            '--use-compress-program',
+            IS_WINDOWS ? '"zstd -T0 --long=30"' : 'zstdmt --long=30'
+          ];
+      case constants_1.CompressionMethod.ZstdWithoutLong:
+        return BSD_TAR_ZSTD
+          ? [
+            'zstd -T0 --force -o',
+            cacheFileName.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
+            constants_1.TarFilename
+          ]
+          : ['--use-compress-program', IS_WINDOWS ? '"zstd -T0"' : 'zstdmt'];
+      default:
+        return ['-z'];
+    }
+  });
+}
+// Executes all commands as separate processes
+function execCommands(commands, cwd) {
+  return __awaiter$1(this, void 0, void 0, function* () {
+    for (const command of commands) {
+      try {
+        yield exec_1.exec(command, undefined, {
+          cwd,
+          env: Object.assign(Object.assign({}, process.env), { MSYS: 'winsymlinks:nativestrict' })
+        });
+      }
+      catch (error) {
+        throw new Error(`${command.split(' ')[0]} failed with error: ${error === null || error === void 0 ? void 0 : error.message}`);
+      }
+    }
+  });
+}
+// List the contents of a tar
 function listTar(archivePath, compressionMethod) {
   return __awaiter$1(this, void 0, void 0, function* () {
-    const args = [
-      ...getCompressionProgram(compressionMethod),
-      '-tf',
-      archivePath.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
-      '-P'
-    ];
-    yield execTar(args, compressionMethod);
+    const commands = yield getCommands(compressionMethod, 'list', archivePath);
+    yield execCommands(commands);
   });
 }
 tar.listTar = listTar;
+// Extract a tar
 function extractTar(archivePath, compressionMethod) {
   return __awaiter$1(this, void 0, void 0, function* () {
     // Create directory to extract tar into
     const workingDirectory = getWorkingDirectory();
     yield io.mkdirP(workingDirectory);
-    const args = [
-      ...getCompressionProgram(compressionMethod),
-      '-xf',
-      archivePath.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
-      '-P',
-      '-C',
-      workingDirectory.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/')
-    ];
-    yield execTar(args, compressionMethod);
+    const commands = yield getCommands(compressionMethod, 'extract', archivePath);
+    yield execCommands(commands);
   });
 }
 tar.extractTar = extractTar;
+// Create a tar
 function createTar(archiveFolder, sourceDirectories, compressionMethod) {
   return __awaiter$1(this, void 0, void 0, function* () {
     // Write source directories to manifest.txt to avoid command length limits
-    const manifestFilename = 'manifest.txt';
-    const cacheFileName = utils$1.getCacheFileName(compressionMethod);
-    fs_1.writeFileSync(path$1.join(archiveFolder, manifestFilename), sourceDirectories.join('\n'));
-    const workingDirectory = getWorkingDirectory();
-    // -T#: Compress using # working thread. If # is 0, attempt to detect and use the number of physical CPU cores.
-    // zstdmt is equivalent to 'zstd -T0'
-    // --long=#: Enables long distance matching with # bits. Maximum is 30 (1GB) on 32-bit OS and 31 (2GB) on 64-bit.
-    // Using 30 here because we also support 32-bit self-hosted runners.
-    // Long range mode is added to zstd in v1.3.2 release, so we will not use --long in older version of zstd.
-    function getCompressionProgram() {
-      switch (compressionMethod) {
-        case constants_1.CompressionMethod.Zstd:
-          return [
-            '--use-compress-program',
-            IS_WINDOWS ? 'zstd -T0 --long=30' : 'zstdmt --long=30'
-          ];
-        case constants_1.CompressionMethod.ZstdWithoutLong:
-          return ['--use-compress-program', IS_WINDOWS ? 'zstd -T0' : 'zstdmt'];
-        default:
-          return ['-z'];
-      }
-    }
-    const args = [
-      '--posix',
-      ...getCompressionProgram(),
-      '-cf',
-      cacheFileName.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
-      '--exclude',
-      cacheFileName.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
-      '-P',
-      '-C',
-      workingDirectory.replace(new RegExp(`\\${path$1.sep}`, 'g'), '/'),
-      '--files-from',
-      manifestFilename
-    ];
-    yield execTar(args, compressionMethod, archiveFolder);
+    fs_1.writeFileSync(path$1.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join('\n'));
+    const commands = yield getCommands(compressionMethod, 'create');
+    yield execCommands(commands, archiveFolder);
   });
 }
 tar.createTar = createTar;
@@ -156438,9 +156551,10 @@ cache.isFeatureAvailable = isFeatureAvailable;
  * @param primaryKey an explicit key for restoring the cache
  * @param restoreKeys an optional ordered list of keys to use for restoring the cache if no cache hit occurred for key
  * @param downloadOptions cache download options
+ * @param enableCrossOsArchive an optional boolean enabled to restore on windows any cache created on any platform
  * @returns string returns the key for the cache hit, otherwise returns undefined
  */
-function restoreCache(paths, primaryKey, restoreKeys, options) {
+function restoreCache(paths, primaryKey, restoreKeys, options, enableCrossOsArchive = false) {
   return __awaiter(this, void 0, void 0, function* () {
     checkPaths(paths);
     restoreKeys = restoreKeys || [];
@@ -156458,7 +156572,8 @@ function restoreCache(paths, primaryKey, restoreKeys, options) {
     try {
       // path are needed to compute version
       const cacheEntry = yield cacheHttpClient.getCacheEntry(keys, paths, {
-        compressionMethod
+        compressionMethod,
+        enableCrossOsArchive
       });
       if (!(cacheEntry === null || cacheEntry === void 0 ? void 0 : cacheEntry.archiveLocation)) {
         // Cache not found
@@ -156505,10 +156620,11 @@ var restoreCache_1 = cache.restoreCache = restoreCache;
  *
  * @param paths a list of file paths to be cached
  * @param key an explicit key for restoring the cache
+ * @param enableCrossOsArchive an optional boolean enabled to save cache on windows which could be restored on any platform
  * @param options cache upload options
  * @returns number returns cacheId if the cache was saved successfully and throws an error if save fails
  */
-function saveCache(paths, key, options) {
+function saveCache(paths, key, options, enableCrossOsArchive = false) {
   var _a, _b, _c, _d, _e;
   return __awaiter(this, void 0, void 0, function* () {
     checkPaths(paths);
@@ -156539,6 +156655,7 @@ function saveCache(paths, key, options) {
       core.debug('Reserving Cache');
       const reserveCacheResponse = yield cacheHttpClient.reserveCache(key, paths, {
         compressionMethod,
+        enableCrossOsArchive,
         cacheSize: archiveFileSize
       });
       if ((_a = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.result) === null || _a === void 0 ? void 0 : _a.cacheId) {
